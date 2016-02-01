@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
 
-    DistanceTransform::distanceTransformL2(f, f, indices, true);
+    DistanceTransform::distanceTransformL2(f, f, indices);
 
     std::cout << std::endl << "D:" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {

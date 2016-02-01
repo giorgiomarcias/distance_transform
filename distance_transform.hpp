@@ -19,9 +19,9 @@
 class DistanceTransform{
 public:
     template < typename Scalar = float, std::size_t DIM = 2 >
-    static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, const bool squared = false)
+    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const bool squared = false)
     {
-        MMArray<Scalar, DIM> fCopy(f);
+        MArray<Scalar, DIM> fCopy(f);
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d)
             for (std::size_t q = 0; q < fCopy.size(d); ++q)
@@ -30,11 +30,20 @@ public:
         if (!squared)
             element_wiseSquareRoot(D);
     }
+    
+    template < typename Scalar = float >
+    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const bool squared = false)
+    {
+        distanceL2(f, D);
+        if (!squared) {
+            element_wiseSquareRoot(D);
+        }
+    }
 
     template < typename Scalar = float, std::size_t DIM = 2 >
-    static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
+    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
     {
-        MMArray<Scalar, DIM> fCopy(f);
+        MArray<Scalar, DIM> fCopy(f);
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d)
             for (std::size_t q = 0; q < fCopy.size(d); ++q) {
@@ -46,10 +55,19 @@ public:
         if (!squared)
             element_wiseSquareRoot(D);
     }
+    
+    template < typename Scalar = float >
+    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I, const bool squared = false)
+    {
+        distanceL2(f, D, I);
+        if (!squared) {
+            element_wiseSquareRoot(D);
+        }
+    }
 
 private:
     template < typename Scalar = float, std::size_t DIM >
-    static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
+    inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
     {
         // compute distance at lower dimensions for each hyperplane
         for (std::size_t q = 0; q < f.size(); ++q)
@@ -57,7 +75,7 @@ private:
     }
 
     template < typename Scalar = float >
-    static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D)
+    inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D)
     {
         if (f.size() == 0 || f.size() > D.size())
             return;
@@ -99,7 +117,7 @@ private:
     }
 
     template < typename Scalar = float, std::size_t DIM >
-    static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I)
+    inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I)
     {
         // compute distance at lower dimensions for each hyperplane
         for (std::size_t q = 0; q < f.size(); ++q)
@@ -107,7 +125,7 @@ private:
     }
 
     template < typename Scalar = float >
-    static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I)
+    inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I)
     {
         if (f.size() == 0 || f.size() > D.size())
             return;
@@ -149,8 +167,9 @@ private:
         delete[] v;
     }
 
+public:
     template < typename Scalar = float, std::size_t DIM >
-    static void element_wiseSquareRoot(MArray<Scalar, DIM> &m)
+    inline static void element_wiseSquareRoot(MArray<Scalar, DIM> &m)
     {
         for (std::size_t q = 0; q < m.size(); ++q) {
             MArray<Scalar, DIM-1> mm = m[q];
@@ -159,7 +178,7 @@ private:
     }
 
     template < typename Scalar = float >
-    static void element_wiseSquareRoot(MArray<Scalar, 1> &m)
+    inline static void element_wiseSquareRoot(MArray<Scalar, 1> &m)
     {
         for (std::size_t q = 0; q < m.size(); ++q)
             m[q] = static_cast<Scalar>(std::sqrt(m[q]));
