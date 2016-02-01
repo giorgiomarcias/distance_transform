@@ -334,11 +334,7 @@ public:
 
     MMArray(const std::size_t size[D])
     {
-        std::size_t total = size[0];
-        for (std::size_t i = 1; i < D; ++i)
-            total *= size[i];
-        _array.reset(new T[total]);
-        MArray<T, D>::operator=(MArray<T, D>(_array.get(), 0, size));
+        resize(size);
     }
 
     MMArray(const MMArray<T, D> &mma)
@@ -370,6 +366,15 @@ public:
             _array = std::move(mma._array);
         }
         return *this;
+    }
+    
+    inline void resize(const std::size_t size[D])
+    {
+        std::size_t total = size[0];
+        for (std::size_t i = 1; i < D; ++i)
+            total *= size[i];
+        _array.reset(new T[total]);                                     // Be aware: data is LOST!
+        MArray<T, D>::operator=(MArray<T, D>(_array.get(), 0, size));
     }
 
 private:
