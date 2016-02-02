@@ -169,7 +169,7 @@ public:
             stream << "Index " << d << " is out of range [0, " << D-1 << ']';
             throw std::out_of_range(stream.str());
         }
-        if (i >= _size[0]) {
+        if (i >= _size[d]) {
             std::stringstream stream;
             stream << "Index " << i << " is out of range [0, " << _size[d]-1 << ']';
             throw std::out_of_range(stream.str());
