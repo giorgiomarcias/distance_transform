@@ -19,9 +19,9 @@
 class DistanceTransform{
 public:
     template < typename Scalar = float, std::size_t DIM = 2 >
-    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const bool squared = false)
+    inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, const bool squared = false)
     {
-        MArray<Scalar, DIM> fCopy(f);
+        MMArray<Scalar, DIM> fCopy(f);
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d)
             for (std::size_t q = 0; q < fCopy.size(d); ++q)
@@ -41,9 +41,9 @@ public:
     }
 
     template < typename Scalar = float, std::size_t DIM = 2 >
-    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
+    inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
     {
-        MArray<Scalar, DIM> fCopy(f);
+        MMArray<Scalar, DIM> fCopy(f);
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d)
             for (std::size_t q = 0; q < fCopy.size(d); ++q) {
