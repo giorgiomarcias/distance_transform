@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Giorgio Marcias
+// Copyright (c) 2016 Giorgio Marcias
 //
 // This file is part of distance_transform, a C++11 implementation of the
 // algorithm in "Distance Transforms of Sampled Functions"
@@ -140,6 +140,33 @@ public:
             offset[k] = _offset[j];
         }
         return MArray<T, D-1>(_array + _offset[d] * i, accumulatedOffset(i, d), size, offset);
+    }
+    
+    inline MArray<T, D> permute(const std::size_t order[D])
+    {
+        bool included[D];
+        for (std::size_t d = 0; d < D; ++d)
+            included[d] = false;
+        for (std::size_t d = 0; d < D; ++d) {
+            if (order[d] >= D) {
+                std::stringstream stream;
+                stream << "Index " << order[d] << " is out of range [0, " << D-1 << ']';
+                throw std::out_of_range(stream.str());
+            }
+            if (included[order[d]]) {
+                std::stringstream stream;
+                stream << "Dimension " << order[d] << " duplicated.";
+                throw std::out_of_range(stream.str());
+            }
+            included[order[d]] = true;
+        }
+        std::size_t size[D];
+        std::size_t offset[D];
+        for (std::size_t d = 0; d < D; ++d) {
+            size[d] = _size[order[d]];
+            offset[d] = _offset[order[d]];
+        }
+        return MArray<T, D>(_array, _accumulatedOffset, size, offset);
     }
 
     inline std::size_t size(const std::size_t d = 0) const

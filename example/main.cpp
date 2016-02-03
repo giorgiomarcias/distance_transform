@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Giorgio Marcias
+// Copyright (c) 2016 Giorgio Marcias
 //
 // This file is part of distance_transform, a C++11 implementation of the
 // algorithm in "Distance Transforms of Sampled Functions"

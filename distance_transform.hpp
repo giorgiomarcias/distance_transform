@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Giorgio Marcias
+// Copyright (c) 2016 Giorgio Marcias
 //
 // This file is part of distance_transform, a C++11 implementation of the
 // algorithm in "Distance Transforms of Sampled Functions"
@@ -71,9 +71,12 @@ private:
     template < typename Scalar = float, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
     {
+        MArray<Scalar, DIM-1> D_q;
         // compute distance at lower dimensions for each hyperplane
-        for (std::size_t q = 0; q < f.size(); ++q)
-            distanceL2(f[q], D[q]);
+        for (std::size_t q = 0; q < f.size(); ++q) {
+            D_q = D[q];
+            distanceL2(f[q], D_q);
+        }
     }
 
     template < typename Scalar = float >
@@ -121,9 +124,14 @@ private:
     template < typename Scalar = float, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I)
     {
+        MArray<Scalar, DIM-1> D_q;
+        MArray<std::size_t, DIM-1> I_q;
         // compute distance at lower dimensions for each hyperplane
-        for (std::size_t q = 0; q < f.size(); ++q)
-            distanceL2(f[q], D[q], I[q]);
+        for (std::size_t q = 0; q < f.size(); ++q) {
+            D_q = D[q];
+            I_q = I[q];
+            distanceL2(f[q], D_q, I_q);
+        }
     }
 
     template < typename Scalar = float >
@@ -173,8 +181,9 @@ public:
     template < typename Scalar = float, std::size_t DIM >
     inline static void element_wiseSquareRoot(MArray<Scalar, DIM> &m)
     {
+        MArray<Scalar, DIM-1> mm;
         for (std::size_t q = 0; q < m.size(); ++q) {
-            MArray<Scalar, DIM-1> mm = m[q];
+            mm = m[q];
             element_wiseSquareRoot(mm);
         }
     }
