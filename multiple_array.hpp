@@ -145,6 +145,11 @@ public:
 
     inline std::size_t size(const std::size_t d = 0) const
     {
+        if (d >= D) {
+            std::stringstream stream;
+            stream << "Index " << d << " is out of range [0, " << D-1 << ']';
+            throw std::out_of_range(stream.str());
+        }
         return _size[d];
     }
 
@@ -180,11 +185,7 @@ public:
 private:
     T                  *_array;
     std::size_t         _accumulatedOffset;
-
-protected:
     std::size_t         _size[D];
-
-private:
     std::size_t         _offset[D];
 };
 
@@ -316,11 +317,7 @@ public:
 private:
     T                  *_array;
     std::size_t         _accumulatedOffset;
-
-protected:
     std::size_t         _size;
-
-private:
     std::size_t         _offset;
 };
 
@@ -329,7 +326,7 @@ class MMArray : public MArray<T, D> {
 public:
     MMArray()
         : MArray<T, D>()
-        , _array(nullptr)
+        , _arrayPtr(nullptr)
     { }
 
     MMArray(const std::size_t size[D])
@@ -344,17 +341,16 @@ public:
 
     MMArray(MMArray &&mma)
         : MArray<T, D>(std::forward<MMArray<T, D>>(mma))
-        , _array(std::move(mma._array))
+        , _arrayPtr(std::move(mma._arrayPtr))
     { }
 
     MMArray & operator=(const MMArray &mma)
     {
         if (&mma != this) {
-            _array.reset(new T[mma.totalSize()]);
-            std::memcpy(_array.get(), mma._array.get(), mma.totalSize() * sizeof(T));
             std::size_t size[D];
             mma.size(size);
-            MArray<T, D>::operator=(MArray<T, D>(_array.get(), 0, size));
+            resize(size);
+            std::memcpy(_arrayPtr.get(), mma._arrayPtr.get(), MArray<T, D>::totalSize() * sizeof(T));
         }
         return *this;
     }
@@ -363,7 +359,7 @@ public:
     {
         if (&mma != this) {
             MArray<T, D>::operator=(std::forward<MMArray<T, D>>(mma));
-            _array = std::move(mma._array);
+            _arrayPtr = std::move(mma._arrayPtr);
         }
         return *this;
     }
@@ -373,12 +369,12 @@ public:
         std::size_t total = size[0];
         for (std::size_t i = 1; i < D; ++i)
             total *= size[i];
-        _array.reset(new T[total]);                                     // Be aware: data is LOST!
-        MArray<T, D>::operator=(MArray<T, D>(_array.get(), 0, size));
+        _arrayPtr.reset(new T[total]);                                     // Be aware: data is LOST!
+        MArray<T, D>::operator=(MArray<T, D>(_arrayPtr.get(), 0, size));
     }
 
 private:
-    std::unique_ptr<T[]>    _array;
+    std::unique_ptr<T[]>    _arrayPtr;
 };
 
 #endif /* multiple_array_hpp */

@@ -44,11 +44,13 @@ public:
     inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
     {
         MMArray<Scalar, DIM> fCopy(f);
+        MArray<Scalar, DIM-1> fCopy_dq;
+        MArray<std::size_t, DIM-1> I_dq;
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d)
             for (std::size_t q = 0; q < fCopy.size(d); ++q) {
-                MArray<Scalar, DIM-1> fCopy_dq(fCopy.slice(d, q));
-                MArray<std::size_t, DIM-1> I_dq(I.slice(d, q));
+                fCopy_dq = fCopy.slice(d, q);
+                I_dq = I.slice(d, q);
                 distanceL2(fCopy_dq, fCopy_dq, I_dq);
             }
         D = std::move(fCopy);
@@ -97,7 +99,7 @@ private:
             do {
                 --k;
                 // compute horizontal position of intersection between the parabola from q and the current lowest parabola
-                s = static_cast<double>((f[q] + q*q) - (f[v[k]] + v[k]*v[k])) / static_cast<double>(2*q - 2*v[k]);
+                s = ((f[q] + q*q) - static_cast<double>(f[v[k]] + v[k]*v[k])) / (2*q - static_cast<double>(2*v[k]));
             } while (s <= z[k]);
             ++k;
             v[k] = q;
@@ -109,7 +111,7 @@ private:
         for (std::size_t q = 0; q < f.size(); ++q) {
             while(z[k+1] < static_cast<double>(q))
                 ++k;
-            D[q] = static_cast<Scalar>(f[v[k]] + (q - v[k])*(q - v[k]));
+            D[q] = f[v[k]] + (q - static_cast<Scalar>(v[k]))*(q - static_cast<Scalar>(v[k]));
         }
         // delete allocated memory
         delete[] z;
@@ -147,7 +149,11 @@ private:
             do {
                 --k;
                 // compute horizontal position of intersection between the parabola from q and the current lowest parabola
-                s = static_cast<double>((f[q] + q*q) - (f[v[k]] + v[k]*v[k])) / static_cast<double>(2*q - 2*v[k]);
+                double a = f[q] + q*q;
+                double b = f[v[k]] + v[k]*v[k];
+                double den = 2 * (q - static_cast<double>(v[k]));
+                s = (a - b) / den;
+                s = ((f[q] + q*q) - static_cast<double>(f[v[k]] + v[k]*v[k])) / (2*q - static_cast<double>(2*v[k]));
             } while (s <= z[k]);
             ++k;
             v[k] = q;
@@ -159,7 +165,7 @@ private:
         for (std::size_t q = 0; q < f.size(); ++q) {
             while(z[k+1] < static_cast<double>(q))
                 ++k;
-            D[q] = static_cast<Scalar>(f[v[k]] + (q - v[k])*(q - v[k]));
+            D[q] = f[v[k]] + (q - static_cast<Scalar>(v[k]))*(q - static_cast<Scalar>(v[k]));
             I[q] = f.accumulatedOffset(v[k]);
         }
         // delete allocated memory
