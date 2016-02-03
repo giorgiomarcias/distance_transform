@@ -40,7 +40,7 @@ public:
             _size[i] = _array ? size[i] : 0;
         _offset[D-1] = 1;
         for (std::size_t j = D-1; j > 0; --j)
-            _offset[j-1] = _size[j-1] * _offset[j];
+            _offset[j-1] = _size[j] * _offset[j];
     }
 
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[D], const std::size_t offset[D])
@@ -57,11 +57,10 @@ public:
         : _array(ma._array)
         , _accumulatedOffset(ma._accumulatedOffset)
     {
-        for (std::size_t i = 0; i < D; ++i)
+        for (std::size_t i = 0; i < D; ++i) {
             _size[i] = ma._size[i];
-        _offset[D-1] = 1;
-        for (std::size_t j = D-1; j > 0; --j)
-            _offset[j-1] = _size[j-1] * _offset[j];
+            _offset[i] = ma._offset[i];
+        }
     }
 
     MArray(MArray &&ma)
@@ -203,7 +202,7 @@ public:
         : _array(array)
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
         , _size(_array ? size : 0)
-        , _offset(0)
+        , _offset(_array ? 1 : 0)
     { }
 
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size, const std::size_t offset)
@@ -217,7 +216,7 @@ public:
         : _array(const_cast<T*>(array))
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
         , _size(_array ? size[0] : 0)
-        , _offset(0)
+        , _offset(_array ? 1 : 0)
     { }
 
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[1], const std::size_t offset[1])
@@ -250,6 +249,7 @@ public:
     {
         if (&ma != this) {
             _array = ma._array;
+            _accumulatedOffset = ma._accumulatedOffset;
             _size = ma._size;
             _offset = ma._offset;
         }
@@ -260,9 +260,11 @@ public:
     {
         if (&ma != this) {
             _array = ma._array;
+            _accumulatedOffset = ma._accumulatedOffset;
             _size = ma._size;
             _offset = ma._offset;
             ma._array = nullptr;
+            ma._accumulatedOffset = 0;
             ma._size = 0;
             ma._offset = 0;
         }
@@ -328,7 +330,7 @@ public:
         : MArray<T, D>()
         , _arrayPtr(nullptr)
     { }
-
+    
     MMArray(const std::size_t size[D])
     {
         resize(size);

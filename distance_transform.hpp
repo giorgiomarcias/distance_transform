@@ -149,10 +149,6 @@ private:
             do {
                 --k;
                 // compute horizontal position of intersection between the parabola from q and the current lowest parabola
-                double a = f[q] + q*q;
-                double b = f[v[k]] + v[k]*v[k];
-                double den = 2 * (q - static_cast<double>(v[k]));
-                s = (a - b) / den;
                 s = ((f[q] + q*q) - static_cast<double>(f[v[k]] + v[k]*v[k])) / (2*q - static_cast<double>(2*v[k]));
             } while (s <= z[k]);
             ++k;
