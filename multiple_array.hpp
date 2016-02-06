@@ -398,8 +398,18 @@ public:
         std::size_t total = size[0];
         for (std::size_t i = 1; i < D; ++i)
             total *= size[i];
-        _arrayPtr.reset(new T[total]);                                     // Be aware: data is LOST!
-        MArray<T, D>::operator=(MArray<T, D>(_arrayPtr.get(), 0, size));
+        if (total > 0) {
+            _arrayPtr.reset(new T[total]);                                     // Be aware: data is LOST!
+            MArray<T, D>::operator=(MArray<T, D>(_arrayPtr.get(), 0, size));
+        } else {
+            clear();
+        }
+    }
+    
+    inline void clear()
+    {
+        _arrayPtr.reset(nullptr);
+        MArray<T, D>::operator=(MArray<T, D>());
     }
 
 private:
