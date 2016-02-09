@@ -22,10 +22,13 @@ public:
     inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, const bool squared = false)
     {
         MMArray<Scalar, DIM> fCopy(f);
+        MArray<Scalar, DIM-1> fCopy_dq;
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d)
-            for (std::size_t q = 0; q < fCopy.size(d); ++q)
-                distanceL2(fCopy.slice(d, q), fCopy.slice(d, q));
+            for (std::size_t q = 0; q < fCopy.size(d); ++q) {
+                fCopy_dq = fCopy.slice(d, q);
+                distanceL2(fCopy_dq, fCopy_dq);
+            }
         D = std::move(fCopy);
         if (!squared)
             element_wiseSquareRoot(D);
