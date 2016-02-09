@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
     DistanceTransform::distanceTransformL2(f, f, indices);
-    std::cout << "2D distance function computed in: " << (std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
+    std::cout << std::endl << "2D distance function computed in: " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count() << " ns." << std::endl;
 
     std::cout << std::endl << "D:" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     f3D[0][0][0] = 0.0f;
     start = std::chrono::steady_clock::now();
     DistanceTransform::distanceTransformL2(f3D, f3D);
-    std::cout << "3D distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
+    std::cout << std::endl << "3D distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
 
     return 0;
 }
