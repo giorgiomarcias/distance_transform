@@ -49,6 +49,8 @@ public:
         MMArray<Scalar, DIM> fCopy(f);
         MArray<Scalar, DIM-1> fCopy_dq;
         MArray<std::size_t, DIM-1> I_dq;
+        // initialize I
+        initializeIndices(I);
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d)
             for (std::size_t q = 0; q < fCopy.size(d); ++q) {
@@ -70,6 +72,22 @@ public:
         }
     }
 
+    template < std::size_t DIM >
+    inline static void initializeIndices(MArray<std::size_t, DIM> &I)
+    {
+        MArray<std::size_t, DIM-1> I_q;
+        for (std::size_t q = 0; q < I.size(); ++q) {
+            I_q = I[q];
+            initializeIndices(I_q);
+        }
+    }
+    
+    inline static void initializeIndices(MArray<std::size_t, 1> &I)
+    {
+        for (std::size_t q = 0; q < I.size(); ++q)
+            I[q] = I.accumulatedOffset(q);
+    }
+    
 private:
     template < typename Scalar = float, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
@@ -173,7 +191,7 @@ private:
             while(z[k+1] < static_cast<double>(q))
                 ++k;
             D[q] = f[v[k]] + (q - static_cast<Scalar>(v[k]))*(q - static_cast<Scalar>(v[k]));
-            I[q] = f.accumulatedOffset(v[k]);
+            I[q] = I[v[k]];
         }
         // delete allocated memory
         delete[] z;

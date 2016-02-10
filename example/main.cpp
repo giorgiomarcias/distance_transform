@@ -19,7 +19,7 @@
 
 int main(int argc, char *argv[])
 {
-    std::vector<std::size_t> size({5, 5});
+    std::vector<std::size_t> size({10, 10});
     MMArray<float, 2> f(size.data());
     MMArray<std::size_t, 2> indices(size.data());
     for (std::size_t i = 0; i < size[0]; ++i)
@@ -28,8 +28,8 @@ int main(int argc, char *argv[])
                 f[i][j] = 0.0f;
             else
                 f[i][j] = std::numeric_limits<float>::max();
-            indices[i][j] = i * size[1] + j;
         }
+    DistanceTransform::initializeIndices(indices);  // this is not necessary, since distanceTransformL2() already does it
     std::cout << "indices:" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
         for (std::size_t j = 0; j < size[1]; ++j)
