@@ -66,8 +66,19 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
     
+    // 2D
+    size = {320, 240};
+    MMArray<float, 2> f2D(size.data());
+    for (std::size_t i = 0; i < size[0]; ++i)
+        for (std::size_t j = 0; j < size[1]; ++j)
+            f2D[i][j] = std::numeric_limits<float>::max();
+    f2D[0][0] = 0.0f;
+    start = std::chrono::steady_clock::now();
+    DistanceTransform::distanceTransformL2(f2D, f2D);
+    std::cout << std::endl << size[0] << 'x' << size[1] << " distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
+    
     // 3D
-    size = {512, 512, 512};
+    size = {400, 320, 240};
     MMArray<float, 3> f3D(size.data());
     for (std::size_t i = 0; i < size[0]; ++i)
         for (std::size_t j = 0; j < size[1]; ++j)
@@ -76,7 +87,7 @@ int main(int argc, char *argv[])
     f3D[0][0][0] = 0.0f;
     start = std::chrono::steady_clock::now();
     DistanceTransform::distanceTransformL2(f3D, f3D);
-    std::cout << std::endl << "3D distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
+    std::cout << std::endl << size[0] << 'x' << size[1] << 'x' << size[2] << " distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
 
     return 0;
 }
