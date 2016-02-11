@@ -128,13 +128,6 @@ public:
         return s;
     }
     
-    inline MArray<T, D-1> slice(const std::size_t d, const std::size_t i) const
-    {
-        MArray<T, D-1> s;
-        slice(d, i, s);
-        return s;
-    }
-
     inline void slice(const std::size_t d, const std::size_t i, MArray<T, D-1> &s) const
     {
         if (d >= D) {
@@ -160,7 +153,14 @@ public:
         }
     }
     
-    inline MArray<T, D> permute(const std::size_t order[D])
+    inline MArray<T, D-1> slice(const std::size_t d, const std::size_t i) const
+    {
+        MArray<T, D-1> s;
+        slice(d, i, s);
+        return s;
+    }
+
+    inline void permute(const std::size_t order[D], MArray<T, D> &p)
     {
         bool included[D];
         for (std::size_t d = 0; d < D; ++d)
@@ -174,17 +174,23 @@ public:
             if (included[order[d]]) {
                 std::stringstream stream;
                 stream << "Dimension " << order[d] << " duplicated.";
-                throw std::out_of_range(stream.str());
+                throw std::invalid_argument(stream.str());
             }
             included[order[d]] = true;
         }
-        std::size_t size[D];
-        std::size_t offset[D];
+        p._array = _array;
+        p._accumulatedOffset = _accumulatedOffset;
         for (std::size_t d = 0; d < D; ++d) {
-            size[d] = _size[order[d]];
-            offset[d] = _offset[order[d]];
+            p._size[d] = _size[order[d]];
+            p._offset[d] = _offset[order[d]];
         }
-        return MArray<T, D>(_array, _accumulatedOffset, size, offset);
+    }
+    
+    inline MArray<T, D> permute(const std::size_t order[D])
+    {
+        MArray<T, D> p;
+        permute(order, p);
+        return p;
     }
 
     inline std::size_t size(const std::size_t d = 0) const
@@ -357,6 +363,16 @@ public:
     {
         return _size[0];
     }
+    
+    inline void size(std::size_t s[1]) const
+    {
+        s[0] = _size[0];
+    }
+    
+    inline std::size_t totalSize() const
+    {
+        return size();
+    }
 
     inline std::size_t accumulatedOffset(const std::size_t i = 0) const
     {
@@ -385,11 +401,15 @@ public:
     { }
     
     MMArray(const std::size_t size[D])
+        : MArray<T, D>()
+        , _arrayPtr(nullptr)
     {
         resize(size);
     }
 
     MMArray(const MMArray<T, D> &mma)
+        : MArray<T, D>()
+        , _arrayPtr(nullptr)
     {
         *this = mma;
     }
@@ -425,7 +445,8 @@ public:
         for (std::size_t i = 1; i < D; ++i)
             total *= size[i];
         if (total > 0) {
-            _arrayPtr.reset(new T[total]);                                     // Be aware: data is LOST!
+            if (total != MArray<T, D>::totalSize())
+                _arrayPtr.reset(new T[total]);                                  // Be aware: data is LOST!
             MArray<T, D>::operator=(MArray<T, D>(_arrayPtr.get(), 0, size));
         } else {
             clear();

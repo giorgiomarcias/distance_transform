@@ -21,6 +21,11 @@ public:
     template < typename Scalar = float, std::size_t DIM = 2 >
     inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, const bool squared = false)
     {
+        if (&D != &f) {
+            std::size_t size[DIM];
+            f.size(size);
+            D.resize(size);
+        }
         MMArray<Scalar, DIM> fCopy(f);
         MArray<Scalar, DIM> tmpF(fCopy);
         MArray<Scalar, DIM> tmpD(D);
@@ -42,8 +47,12 @@ public:
     }
     
     template < typename Scalar = float >
-    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const bool squared = false)
+    inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, const bool squared = false)
     {
+        std::size_t size[1];
+        f.size(size);
+        if (&D != &f)
+            D.resize(size);
         distanceL2(f, D);
         if (!squared) {
             element_wiseSquareRoot(D);
@@ -53,6 +62,11 @@ public:
     template < typename Scalar = float, std::size_t DIM = 2 >
     inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MMArray<std::size_t, DIM> &I, const bool squared = false)
     {
+        std::size_t size[DIM];
+        f.size(size);
+        if (&D != &f)
+            D.resize(size);
+        I.resize(size);
         MMArray<Scalar, DIM> fCopy(f);          // make a safe copy of f
         MArray<Scalar, DIM> tmpF(fCopy);
         MArray<Scalar, DIM> tmpD(D);
@@ -86,8 +100,13 @@ public:
     }
     
     template < typename Scalar = float >
-    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I, const bool squared = false)
+    inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, MMArray<std::size_t, 1> &I, const bool squared = false)
     {
+        std::size_t size[1];
+        f.size(size);
+        if (&D != &f)
+            D.resize(size);
+        I.resize(size);
         distanceL2(f, D, I);
         if (!squared) {
             element_wiseSquareRoot(D);
