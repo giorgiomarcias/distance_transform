@@ -105,18 +105,37 @@ public:
         }
         return *this;
     }
-
-    inline MArray<T, D-1> operator[](const std::size_t i) const
+    
+    inline void at(const std::size_t i, MArray<T, D-1> &s) const
     {
         if (i >= _size[0]) {
             std::stringstream stream;
             stream << "Index " << i << " is out of range [0, " << _size[0]-1 << ']';
             throw std::out_of_range(stream.str());
         }
-        return MArray<T, D-1>(_array + _offset[0] * i, accumulatedOffset(i), _size + 1, _offset + 1);
+        s._array = _array + _offset[0] * i;
+        s._accumulatedOffset = accumulatedOffset(i);
+        for (std::size_t j = 1; j < D; ++j) {
+            s._size[j-1] = _size[j];
+            s._offset[j-1] = _offset[j];
+        }
     }
 
+    inline MArray<T, D-1> operator[](const std::size_t i) const
+    {
+        MArray<T, D-1> s;
+        at(i, s);
+        return s;
+    }
+    
     inline MArray<T, D-1> slice(const std::size_t d, const std::size_t i) const
+    {
+        MArray<T, D-1> s;
+        slice(d, i, s);
+        return s;
+    }
+
+    inline void slice(const std::size_t d, const std::size_t i, MArray<T, D-1> &s) const
     {
         if (d >= D) {
             std::stringstream stream;
@@ -128,18 +147,17 @@ public:
             stream << "Index " << i << " is out of range [0, " << _size[d]-1 << ']';
             throw std::out_of_range(stream.str());
         }
-        std::size_t size[D-1];
-        std::size_t offset[D-1];
+        s._array = _array + _offset[d] * i;
+        s._accumulatedOffset = accumulatedOffset(i, d);
         std::size_t k = 0;
         for (std::size_t j = 0; j < d; ++j, ++k) {
-            size[k] = _size[j];
-            offset[k] = _offset[j];
+            s._size[k] = _size[j];
+            s._offset[k] = _offset[j];
         }
         for (std::size_t j = d+1; j < D; ++j, ++k) {
-            size[k] = _size[j];
-            offset[k] = _offset[j];
+            s._size[k] = _size[j];
+            s._offset[k] = _offset[j];
         }
-        return MArray<T, D-1>(_array + _offset[d] * i, accumulatedOffset(i, d), size, offset);
     }
     
     inline MArray<T, D> permute(const std::size_t order[D])
@@ -209,6 +227,7 @@ public:
     }
 
 private:
+    friend class MArray<T, D+1>;
     T                  *_array;
     std::size_t         _accumulatedOffset;
     std::size_t         _size[D];
@@ -221,55 +240,61 @@ public:
     MArray()
         : _array(nullptr)
         , _accumulatedOffset(0)
-        , _size(0)
-        , _offset(0)
-    { }
+    {
+        _size[0] = 0;
+        _offset[0] = 0;
+    }
 
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size)
         : _array(array)
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
-        , _size(_array ? size : 0)
-        , _offset(_array ? 1 : 0)
-    { }
+    {
+        _size[0] = _array ? size : 0;
+        _offset[0] = _array ? 1 : 0;
+    }
 
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size, const std::size_t offset)
         : _array(array)
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
-        , _size(_array ? size : 0)
-        , _offset(_array ? offset : 0)
-    { }
+    {
+        _size[0] = _array ? size : 0;
+        _offset[0] = _array ? offset : 0;
+    }
 
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[1])
         : _array(const_cast<T*>(array))
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
-        , _size(_array ? size[0] : 0)
-        , _offset(_array ? 1 : 0)
-    { }
+    {
+        _size[0] = _array ? size[0] : 0;
+        _offset[0] = _array ? 1 : 0;
+    }
 
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[1], const std::size_t offset[1])
         : _array(const_cast<T*>(array))
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
-        , _size(_array ? size[0] : 0)
-        , _offset(_array ? offset[0] : 0)
-    { }
+    {
+        _size[0] = _array ? size[0] : 0;
+        _offset[0] = _array ? offset[0] : 0;
+    }
 
     MArray(const MArray &ma)
         : _array(ma._array)
         , _accumulatedOffset(ma._accumulatedOffset)
-        , _size(ma._size)
-        , _offset(ma._offset)
-    { }
+    {
+        _size[0] = ma._size[0];
+        _offset[0] = ma._offset[0];
+    }
 
     MArray(MArray &&ma)
         : _array(ma._array)
         , _accumulatedOffset(ma._accumulatedOffset)
-        , _size(ma._size)
-        , _offset(ma._offset)
     {
+        _size[0] = ma._size[0];
+        _offset[0] = ma._offset[0];
         ma._array = nullptr;
         ma._accumulatedOffset = 0;
-        ma._size = 0;
-        ma._offset = 0;
+        ma._size[0] = 0;
+        ma._offset[0] = 0;
     }
 
     MArray & operator=(const MArray &ma)
@@ -277,8 +302,8 @@ public:
         if (&ma != this) {
             _array = ma._array;
             _accumulatedOffset = ma._accumulatedOffset;
-            _size = ma._size;
-            _offset = ma._offset;
+            _size[0] = ma._size[0];
+            _offset[0] = ma._offset[0];
         }
         return *this;
     }
@@ -288,34 +313,34 @@ public:
         if (&ma != this) {
             _array = ma._array;
             _accumulatedOffset = ma._accumulatedOffset;
-            _size = ma._size;
-            _offset = ma._offset;
+            _size[0] = ma._size[0];
+            _offset[0] = ma._offset[0];
             ma._array = nullptr;
             ma._accumulatedOffset = 0;
-            ma._size = 0;
-            ma._offset = 0;
+            ma._size[0] = 0;
+            ma._offset[0] = 0;
         }
         return *this;
     }
 
     inline const T & operator[](const std::size_t i) const
     {
-        if (i >= _size) {
+        if (i >= _size[0]) {
             std::stringstream stream;
-            stream << "Index " << i << " is out of range [0, " << _size-1 << ']';
+            stream << "Index " << i << " is out of range [0, " << _size[0]-1 << ']';
             throw std::out_of_range(stream.str());
         }
-        return *(_array + i * _offset);
+        return *(_array + i * _offset[0]);
     }
 
     inline T & operator[](const std::size_t i)
     {
-        if (i >= _size) {
+        if (i >= _size[0]) {
             std::stringstream stream;
-            stream << "Index " << i << " is out of range [0, " << _size-1 << ']';
+            stream << "Index " << i << " is out of range [0, " << _size[0]-1 << ']';
             throw std::out_of_range(stream.str());
         }
-        return *(_array + i * _offset);
+        return *(_array + i * _offset[0]);
     }
 
     inline const T & slice(const std::size_t i) const
@@ -330,24 +355,25 @@ public:
 
     inline std::size_t size() const
     {
-        return _size;
+        return _size[0];
     }
 
     inline std::size_t accumulatedOffset(const std::size_t i = 0) const
     {
-        if (i >= _size) {
+        if (i >= _size[0]) {
             std::stringstream stream;
-            stream << "Index " << i << " is out of range [0, " << _size-1 << ']';
+            stream << "Index " << i << " is out of range [0, " << _size[0]-1 << ']';
             throw std::out_of_range(stream.str());
         }
-        return _accumulatedOffset + _offset * i;
+        return _accumulatedOffset + _offset[0] * i;
     }
 
 private:
+    friend class MArray<T, 2>;
     T                  *_array;
     std::size_t         _accumulatedOffset;
-    std::size_t         _size;
-    std::size_t         _offset;
+    std::size_t         _size[1];
+    std::size_t         _offset[1];
 };
 
 template < typename T, std::size_t D >

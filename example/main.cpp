@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     MMArray<std::size_t, 2> indices(size.data());
     for (std::size_t i = 0; i < size[0]; ++i)
         for (std::size_t j = 0; j < size[1]; ++j) {
-            if (i == 1 || j == 3)
+            if (i == j)
                 f[i][j] = 0.0f;
             else
                 f[i][j] = std::numeric_limits<float>::max();
@@ -50,13 +50,13 @@ int main(int argc, char *argv[])
     }
 
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    DistanceTransform::distanceTransformL2(f, f, indices);
+    DistanceTransform::distanceTransformL2(f, f, indices, true);    // true for keeping squared distances, false for square roots
     std::cout << std::endl << "2D distance function computed in: " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count() << " ns." << std::endl;
 
-    std::cout << std::endl << "D:" << std::endl;
+    std::cout << std::endl << "D (squared):" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
         for (std::size_t j = 0; j < size[1]; ++j)
-            std::cout << std::setw(4) << std::setprecision(1) << std::scientific << f[i][j] << ' ';
+            std::cout << std::setw(4) << std::setprecision(1) << std::fixed << f[i][j] << ' ';
         std::cout << std::endl;
     }
     std::cout << "indices:" << std::endl;

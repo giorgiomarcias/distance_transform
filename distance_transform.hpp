@@ -22,14 +22,21 @@ public:
     inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, const bool squared = false)
     {
         MMArray<Scalar, DIM> fCopy(f);
-        MArray<Scalar, DIM-1> fCopy_dq;
+        MArray<Scalar, DIM> tmpF(fCopy);
+        MArray<Scalar, DIM> tmpD(D);
+        MArray<Scalar, DIM-1> f_dq;
+        MArray<Scalar, DIM-1> D_dq;
         // compute for each slice
-        for (std::size_t d = 0; d < DIM; ++d)
-            for (std::size_t q = 0; q < fCopy.size(d); ++q) {
-                fCopy_dq = fCopy.slice(d, q);
-                distanceL2(fCopy_dq, fCopy_dq);
+        for (std::size_t d = 0; d < DIM; ++d) {
+            for (std::size_t q = 0; q < tmpF.size(d); ++q) {
+                tmpF.slice(d, q, f_dq);
+                tmpD.slice(d, q, D_dq);
+                distanceL2(f_dq, D_dq);
             }
-        D = std::move(fCopy);
+            std::swap(tmpD, tmpF);
+        }
+        if (DIM % 2 == 0)
+            D = std::move(fCopy);
         if (!squared)
             element_wiseSquareRoot(D);
     }
@@ -44,21 +51,36 @@ public:
     }
 
     template < typename Scalar = float, std::size_t DIM = 2 >
-    inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
+    inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MMArray<std::size_t, DIM> &I, const bool squared = false)
     {
-        MMArray<Scalar, DIM> fCopy(f);
-        MArray<Scalar, DIM-1> fCopy_dq;
-        MArray<std::size_t, DIM-1> I_dq;
+        MMArray<Scalar, DIM> fCopy(f);          // make a safe copy of f
+        MArray<Scalar, DIM> tmpF(fCopy);
+        MArray<Scalar, DIM> tmpD(D);
+        MMArray<std::size_t, DIM> ICopy(I);     // make a safe copy of I
+        MArray<std::size_t, DIM> Ipre(ICopy);
+        MArray<std::size_t, DIM> Ipost(I);
+        MArray<Scalar, DIM-1> f_dq;
+        MArray<Scalar, DIM-1> D_dq;
+        MArray<std::size_t, DIM-1> Ipre_dq;
+        MArray<std::size_t, DIM-1> Ipost_dq;
         // initialize I
-        initializeIndices(I);
+        initializeIndices(Ipre);
         // compute for each slice
-        for (std::size_t d = 0; d < DIM; ++d)
-            for (std::size_t q = 0; q < fCopy.size(d); ++q) {
-                fCopy_dq = fCopy.slice(d, q);
-                I_dq = I.slice(d, q);
-                distanceL2(fCopy_dq, fCopy_dq, I_dq);
+        for (std::size_t d = 0; d < DIM; ++d) {
+            for (std::size_t q = 0; q < tmpF.size(d); ++q) {
+                tmpF.slice(d, q, f_dq);
+                tmpD.slice(d, q, D_dq);
+                Ipre.slice(d, q, Ipre_dq);
+                Ipost.slice(d, q, Ipost_dq);
+                distanceL2(f_dq, D_dq, Ipre_dq, Ipost_dq);
             }
-        D = std::move(fCopy);
+            std::swap(tmpD, tmpF);
+            std::swap(Ipost, Ipre);
+        }
+        if (DIM % 2 == 0) {
+            D = std::move(fCopy);
+            I = std::move(ICopy);
+        }
         if (!squared)
             element_wiseSquareRoot(D);
     }
@@ -77,7 +99,7 @@ public:
     {
         MArray<std::size_t, DIM-1> I_q;
         for (std::size_t q = 0; q < I.size(); ++q) {
-            I_q = I[q];
+            I.at(q, I_q);
             initializeIndices(I_q);
         }
     }
@@ -92,11 +114,12 @@ private:
     template < typename Scalar = float, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
     {
-        MArray<Scalar, DIM-1> D_q;
+        MArray<Scalar, DIM-1> f_q, D_q;
         // compute distance at lower dimensions for each hyperplane
         for (std::size_t q = 0; q < f.size(); ++q) {
-            D_q = D[q];
-            distanceL2(f[q], D_q);
+            f.at(q, f_q);
+            D.at(q, D_q);
+            distanceL2(f_q, D_q);
         }
     }
 
@@ -115,7 +138,7 @@ private:
         double s = double(0);
         // initialization
         v[0] = 0;
-        z[0] = std::numeric_limits<double>::lowest();
+        z[0] = -std::numeric_limits<double>::max();
         z[1] = std::numeric_limits<double>::max();
         // compute lowest envelope:
         for (std::size_t q = 1; q < f.size(); ++q) {
@@ -143,25 +166,28 @@ private:
     }
 
     template < typename Scalar = float, std::size_t DIM >
-    inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I)
+    inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const MArray<std::size_t, DIM> &Ipre, MArray<std::size_t, DIM> &Ipost)
     {
-        MArray<Scalar, DIM-1> D_q;
-        MArray<std::size_t, DIM-1> I_q;
+        MArray<Scalar, DIM-1> f_q, D_q;
+        MArray<std::size_t, DIM-1> Ipre_q, Ipost_q;
         // compute distance at lower dimensions for each hyperplane
         for (std::size_t q = 0; q < f.size(); ++q) {
-            D_q = D[q];
-            I_q = I[q];
-            distanceL2(f[q], D_q, I_q);
+            f.at(q, f_q);
+            D.at(q, D_q);
+            Ipre.at(q, Ipre_q);
+            Ipost.at(q, Ipost_q);
+            distanceL2(f_q, D_q, Ipre_q, Ipost_q);
         }
     }
 
     template < typename Scalar = float >
-    inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I)
+    inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const MArray<std::size_t, 1> &Ipre, MArray<std::size_t, 1> &Ipost)
     {
         if (f.size() == 0 || f.size() > D.size())
             return;
         if (f.size() == 1) {
             D[0] = f[0];
+            Ipost[0] = Ipre[0];
             return;
         }
         std::size_t k = 0;                          // index of rightmost parabola in lower envelope
@@ -170,7 +196,7 @@ private:
         double s = double(0);
         // initialization
         v[0] = 0;
-        z[0] = std::numeric_limits<double>::lowest();
+        z[0] = -std::numeric_limits<double>::max();
         z[1] = std::numeric_limits<double>::max();
         // compute lowest envelope:
         for (std::size_t q = 1; q < f.size(); ++q) {
@@ -191,7 +217,7 @@ private:
             while(z[k+1] < static_cast<double>(q))
                 ++k;
             D[q] = f[v[k]] + (q - static_cast<Scalar>(v[k]))*(q - static_cast<Scalar>(v[k]));
-            I[q] = I[v[k]];
+            Ipost[q] = Ipre[v[k]];
         }
         // delete allocated memory
         delete[] z;
@@ -204,7 +230,7 @@ public:
     {
         MArray<Scalar, DIM-1> mm;
         for (std::size_t q = 0; q < m.size(); ++q) {
-            mm = m[q];
+            m.at(q, mm);
             element_wiseSquareRoot(mm);
         }
     }
