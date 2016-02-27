@@ -36,8 +36,21 @@ int main(int argc, char *argv[])
             std::cout << std::setw(7) << indices[i][j] << ' ';
         std::cout << std::endl;
     }
-    std::cout << "Slice 2:" << std::endl;
+    std::cout << std::endl << "Window [2:4;3:6]:" << std::endl;
+    std::vector<std::size_t> winStart({2, 3});
+    std::vector<std::size_t> winSize({3, 4});
+    MArray<std::size_t, 2> win = indices.window(winStart.data(), winSize.data());
+    for (std::size_t i = 0; i < win.size(); ++i) {
+        for (std::size_t j = 0; j < win[i].size(); ++j)
+            std::cout << std::setw(7) << win[i][j] << ' ';
+        std::cout << std::endl;
+    }
+    std::cout << std::endl << "Slice 2:" << std::endl;
     MArray<std::size_t, 1> sl = indices.slice(1, 2);
+    for (std::size_t j = 0; j < sl.size(); ++j)
+        std::cout << std::setw(7) << sl[j] << ' ';
+    std::cout <<  std::endl <<"Window [4:9] of slide 2:" << std::endl;
+    sl = sl.window(4, 6);
     for (std::size_t j = 0; j < sl.size(); ++j)
         std::cout << std::setw(7) << sl[j] << ' ';
     std::cout << std::endl << std::endl;

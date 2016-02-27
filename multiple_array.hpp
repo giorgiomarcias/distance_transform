@@ -193,6 +193,37 @@ public:
         return p;
     }
 
+    inline void window(const std::size_t start[D], const std::size_t size[D], MArray<T, D> &p)
+    {
+        for (std::size_t d = 0; d < D; ++d) {
+            if (start[d] >= _size[d]) {
+                std::stringstream stream;
+                stream << "Index " << start[d] << " is out of range [0, " << _size[d] << ']';
+                throw std::out_of_range(stream.str());
+            }
+            if (start[d] + size[d] > _size[d]) {
+                std::stringstream stream;
+                stream << "Window size " << size[d] << " is out of range [" << 0 << ", " << _size[d] - start[d] << ']';
+                throw std::out_of_range(stream.str());
+            }
+        }
+        p._accumulatedOffset = _accumulatedOffset;
+        for (std::size_t d = 0; d < D; ++d)
+            p._accumulatedOffset += _offset[d] * start[d];
+        p._array = _array + (p._accumulatedOffset - _accumulatedOffset);
+        for (std::size_t d = 0; d < D; ++d) {
+            p._size[d] = size[d];
+            p._offset[d] = _offset[d];
+        }
+    }
+
+    inline MArray<T, D> window(const std::size_t start[D], const std::size_t size[D])
+    {
+        MArray<T, D> w;
+        window(start, size, w);
+        return w;
+    }
+
     inline std::size_t size(const std::size_t d = 0) const
     {
         if (d >= D) {
@@ -357,6 +388,56 @@ public:
     inline T & slice(const std::size_t i)
     {
         return *this[i];
+    }
+
+    inline void window(const std::size_t start[1], const std::size_t size[1], MArray<T, 1> &p)
+    {
+        if (start[0] >= _size[0]) {
+            std::stringstream stream;
+            stream << "Index " << start[0] << " is out of range [0, " << _size[0] << ']';
+            throw std::out_of_range(stream.str());
+        }
+        if (start[0] + size[0] > _size[0]) {
+            std::stringstream stream;
+            stream << "Window size " << size[0] << " is out of range [" << 0 << ", " << _size[0] - start[0] << ']';
+            throw std::out_of_range(stream.str());
+        }
+        p._accumulatedOffset = _accumulatedOffset + _offset[0] * start[0];
+        p._array = _array + (p._accumulatedOffset - _accumulatedOffset);
+        p._size[0] = size[0];
+        p._offset[0] = _offset[0];
+    }
+
+    inline MArray<T, 1> window(const std::size_t start[1], const std::size_t size[1])
+    {
+        MArray<T, 1> w;
+        window(start, size, w);
+        return w;
+    }
+
+    inline void window(const std::size_t start, const std::size_t size, MArray<T, 1> &p)
+    {
+        if (start >= _size[0]) {
+            std::stringstream stream;
+            stream << "Index " << start << " is out of range [0, " << _size[0] << ']';
+            throw std::out_of_range(stream.str());
+        }
+        if (start + size > _size[0]) {
+            std::stringstream stream;
+            stream << "Window size " << size << " is out of range [" << 0 << ", " << _size[0] - start << ']';
+            throw std::out_of_range(stream.str());
+        }
+        p._accumulatedOffset = _accumulatedOffset + _offset[0] * start;
+        p._array = _array + (p._accumulatedOffset - _accumulatedOffset);
+        p._size[0] = size;
+        p._offset[0] = _offset[0];
+    }
+
+    inline MArray<T, 1> window(const std::size_t start, const std::size_t size)
+    {
+        MArray<T, 1> w;
+        window(start, size, w);
+        return w;
     }
 
     inline std::size_t size() const
