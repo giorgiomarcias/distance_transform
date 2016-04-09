@@ -1,14 +1,13 @@
-Linear-Time Distance Transform
-==============================
+C++ Distance Transform
+======================
 
 This software is a C++11 implementation of the algorithm described in:
 
->***Distance Transforms of Sampled Functions***  
+>** * Distance Transforms of Sampled Functions * **  
 >Pedro F. Felzenszwalb, Daniel P. Huttenlocher  
 >Theory of Computing, Vol. 8, No. 19, September 2012
 
-Check their
-[project site](http://cs.brown.edu/~pff/dt/).  
+See their [project site](http://cs.brown.edu/~pff/dt/).  
 
 The paper describes a linear-time algorithm for solving a class of minimization
 problems involving a cost function with both local and spatial terms.
@@ -19,9 +18,7 @@ Consequently, it can be used as a simple, fast method for computing the
 Euclidean distance transform of a binary image.
 
 ###### Note ######
-This software takes some cues from both their implementation and the one by
-Sofien Bouaziz and Andrea Tagliasacchi
-([check here](https://github.com/ataiya/dtform)).
+This software takes some cues from both their implementation and the one by Sofien Bouaziz and Andrea Tagliasacchi ([check here](https://github.com/ataiya/dtform)).
 
 ## Features: ##
 * ***N*-Dimensional:** The implementation by Felzenszwalb and Huttenlocher
@@ -36,6 +33,5 @@ Sofien Bouaziz and Andrea Tagliasacchi
     distance (taken from the implementation by Sofien Bouaziz and Andrea
     Tagliasacchi).
 
-### License ##
-This software is subject to the
-[Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html) License.
+### License ###
+This software is subject to the [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html) License.
