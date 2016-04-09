@@ -16,6 +16,7 @@
 #include <chrono>
 #include <distance_transform.hpp>
 
+using namespace dt;
 
 int main(int argc, char *argv[])
 {
@@ -78,7 +79,7 @@ int main(int argc, char *argv[])
             std::cout << std::setw(7) << indices[i][j] << ' ';
         std::cout << std::endl;
     }
-    
+
     // 2D
     size = {320, 240};
     MMArray<float, 2> f2D(size.data());
@@ -89,7 +90,7 @@ int main(int argc, char *argv[])
     start = std::chrono::steady_clock::now();
     DistanceTransform::distanceTransformL2(f2D, f2D);
     std::cout << std::endl << size[0] << 'x' << size[1] << " distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
-    
+
     // 3D
     size = {400, 320, 240};
     MMArray<float, 3> f3D(size.data());

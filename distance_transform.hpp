@@ -16,6 +16,8 @@
 #include <cmath>
 #include "multiple_array.hpp"
 
+namespace dt {
+
 class DistanceTransform{
 public:
     template < typename Scalar = float, std::size_t DIM = 2 >
@@ -45,7 +47,7 @@ public:
         if (!squared)
             element_wiseSquareRoot(D);
     }
-    
+
     template < typename Scalar = float >
     inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, const bool squared = false)
     {
@@ -98,7 +100,7 @@ public:
         if (!squared)
             element_wiseSquareRoot(D);
     }
-    
+
     template < typename Scalar = float >
     inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, MMArray<std::size_t, 1> &I, const bool squared = false)
     {
@@ -122,13 +124,13 @@ public:
             initializeIndices(I_q);
         }
     }
-    
+
     inline static void initializeIndices(MArray<std::size_t, 1> &I)
     {
         for (std::size_t q = 0; q < I.size(); ++q)
             I[q] = I.accumulatedOffset(q);
     }
-    
+
 private:
     template < typename Scalar = float, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
@@ -261,5 +263,7 @@ public:
             m[q] = static_cast<Scalar>(std::sqrt(m[q]));
     }
 };
+
+}
 
 #endif /* distance_transform_h */

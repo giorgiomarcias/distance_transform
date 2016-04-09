@@ -21,6 +21,8 @@
 #include <sstream>
 #include <utility>
 
+namespace dt {
+
 template < typename T, std::size_t D >
 class MArray {
 public:
@@ -105,7 +107,7 @@ public:
         }
         return *this;
     }
-    
+
     inline void at(const std::size_t i, MArray<T, D-1> &s) const
     {
         if (i >= _size[0]) {
@@ -127,7 +129,7 @@ public:
         at(i, s);
         return s;
     }
-    
+
     inline void slice(const std::size_t d, const std::size_t i, MArray<T, D-1> &s) const
     {
         if (d >= D) {
@@ -152,7 +154,7 @@ public:
             s._offset[k] = _offset[j];
         }
     }
-    
+
     inline MArray<T, D-1> slice(const std::size_t d, const std::size_t i) const
     {
         MArray<T, D-1> s;
@@ -185,7 +187,7 @@ public:
             p._offset[d] = _offset[order[d]];
         }
     }
-    
+
     inline MArray<T, D> permute(const std::size_t order[D])
     {
         MArray<T, D> p;
@@ -444,12 +446,12 @@ public:
     {
         return _size[0];
     }
-    
+
     inline void size(std::size_t s[1]) const
     {
         s[0] = _size[0];
     }
-    
+
     inline std::size_t totalSize() const
     {
         return size();
@@ -480,7 +482,7 @@ public:
         : MArray<T, D>()
         , _arrayPtr(nullptr)
     { }
-    
+
     MMArray(const std::size_t size[D])
         : MArray<T, D>()
         , _arrayPtr(nullptr)
@@ -519,7 +521,7 @@ public:
         }
         return *this;
     }
-    
+
     inline void resize(const std::size_t size[D])
     {
         std::size_t total = size[0];
@@ -533,7 +535,7 @@ public:
             clear();
         }
     }
-    
+
     inline void clear()
     {
         _arrayPtr.reset(nullptr);
@@ -543,5 +545,7 @@ public:
 private:
     std::unique_ptr<T[]>    _arrayPtr;
 };
+
+}
 
 #endif /* multiple_array_hpp */
