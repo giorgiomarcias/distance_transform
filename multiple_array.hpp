@@ -23,9 +23,16 @@
 
 namespace dt {
 
+/// The MArray class represents a D-dimensional dope vector (https://en.wikipedia.org/wiki/Dope_vector) of scalar type T.
+/// Given an array stored sequentially in memory, this class wraps it provinding a multi-dimensional matrix interface.
+/// It is possible to take slices, windows or even permutations without actually modifying the underlying memory, no element
+/// hence moved.
 template < typename T, std::size_t D >
 class MArray {
 public:
+    /**
+     *    @brief Default constructor.
+     */
     MArray() : _array(nullptr), _accumulatedOffset(0)
     {
         for (std::size_t i = 0; i < D; ++i) {
@@ -34,6 +41,12 @@ public:
         }
     }
 
+    /**
+     *    @brief Initializer contructor.
+     *    @param array              Pointer to (part of) an array in memory to wrap.
+     *    @param accumulatedOffset  Offset from the origin of the array.
+     *    @param size               Sizes of the D-dimensional matrix.
+     */
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[D])
         : _array(const_cast<T*>(array))
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
@@ -45,6 +58,13 @@ public:
             _offset[j-1] = _size[j] * _offset[j];
     }
 
+    /**
+     *    @brief Initializer contructor.
+     *    @param array              Pointer to (part of) an array in memory to wrap.
+     *    @param accumulatedOffset  Offset from the origin of the array.
+     *    @param size               Sizes of the D-dimensional matrix.
+     *    @param offset             Offsets in each dimension, i.e. jumps in memory.
+     */
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[D], const std::size_t offset[D])
         : _array(const_cast<T*>(array))
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
@@ -55,6 +75,9 @@ public:
         }
     }
 
+    /**
+     *    @brief Copy constructor.
+     */
     MArray(const MArray &ma)
         : _array(ma._array)
         , _accumulatedOffset(ma._accumulatedOffset)
@@ -65,6 +88,9 @@ public:
         }
     }
 
+    /**
+     *    @brief Move constructor.
+     */
     MArray(MArray &&ma)
         : _array(ma._array)
         , _accumulatedOffset(ma._accumulatedOffset)
@@ -78,6 +104,9 @@ public:
         }
     }
 
+    /**
+     *    @brief Copy assignment operator.
+     */
     inline MArray & operator=(const MArray &ma)
     {
         if (&ma != this) {
@@ -91,6 +120,9 @@ public:
         return *this;
     }
 
+    /**
+     *    @brief Move assignment operator.
+     */
     inline MArray & operator=(MArray &&ma)
     {
         if (&ma != this) {
@@ -108,6 +140,11 @@ public:
         return *this;
     }
 
+    /**
+     *    @brief Gives access to the i-th sub-matrix in the first dimension, i.e. m[i][*]...[*].
+     *    @param i                  The i-th "row" of this matrix.
+     *    @param s                  The output sub-matrix at i.
+     */
     inline void at(const std::size_t i, MArray<T, D-1> &s) const
     {
         if (i >= _size[0]) {
@@ -123,6 +160,11 @@ public:
         }
     }
 
+    /**
+     *    @brief Gives access to the i-th sub-matrix in the first dimension, i.e. m[i][*]...[*].
+     *    @param i                  The i-th "row" of this matrix.
+     *    @return The output sub-matrix at i.
+     */
     inline MArray<T, D-1> operator[](const std::size_t i) const
     {
         MArray<T, D-1> s;
@@ -130,6 +172,12 @@ public:
         return s;
     }
 
+    /**
+     *    @brief Gives access to the i-th sub-matrix in the d-th dimension, i.e. m[*]...[i]...[*].
+     *    @param d                  The dimension where to slice.
+     *    @param i                  The i-th "row" of this matrix.
+     *    @param s                  The output sub-matrix at i in the d dimension.
+     */
     inline void slice(const std::size_t d, const std::size_t i, MArray<T, D-1> &s) const
     {
         if (d >= D) {
@@ -155,6 +203,12 @@ public:
         }
     }
 
+    /**
+     *    @brief Gives access to the i-th sub-matrix in the d-th dimension, i.e. m[*]...[i]...[*].
+     *    @param d                  The dimension where to slice.
+     *    @param i                  The i-th "row" of this matrix.
+     *    @return The output sub-matrix at i in the d dimension.
+     */
     inline MArray<T, D-1> slice(const std::size_t d, const std::size_t i) const
     {
         MArray<T, D-1> s;
@@ -162,6 +216,12 @@ public:
         return s;
     }
 
+    /**
+     *    @brief Reorders the sub-matrixes s.t. the one at 0 <= i < D goes to 0 <= order[i] < D, i.e. m[*]..[*]_i...[*] swaps with m[*]...[i]...[*]_order[i]...[*].
+     *    @param order              A permutation of the matrix indices.
+     *    @param p                  The output permuted matrix.
+     *    @note Example: transpose a 2D matrix by swapping the access indices - MArray<T,2> m, mt; std::size_t trans_ord[2] = {1, 0}; m.permute(trans_ord, mt);
+     */
     inline void permute(const std::size_t order[D], MArray<T, D> &p)
     {
         bool included[D];
@@ -188,6 +248,12 @@ public:
         }
     }
 
+    /**
+     *    @brief Reorders the sub-matrixes s.t. the one at 0 <= i < D goes to 0 <= order[i] < D, i.e. m[*]..[*]_i...[*] swaps with m[*]...[i]...[*]_order[i]...[*].
+     *    @param order              A permutation of the matrix indices.
+     *    @return The output permuted matrix.
+     *    @note Example: transpose a 2D matrix by swapping the access indices - MArray<T,2> m, mt; std::size_t trans_ord[2] = {1, 0}; mt = m.permute(trans_ord);
+     */
     inline MArray<T, D> permute(const std::size_t order[D])
     {
         MArray<T, D> p;
@@ -195,6 +261,12 @@ public:
         return p;
     }
 
+    /**
+     *    @brief Extracts a D-dimensional window from this matrix.
+     *    @param start              The initial offset of the window in each dimension.
+     *    @param size               The sizes of the window.
+     *    @param p                  The output sub-matrix.
+     */
     inline void window(const std::size_t start[D], const std::size_t size[D], MArray<T, D> &p)
     {
         for (std::size_t d = 0; d < D; ++d) {
@@ -219,6 +291,12 @@ public:
         }
     }
 
+    /**
+     *    @brief Extracts a D-dimensional window from this matrix.
+     *    @param start              The initial offset of the window in each dimension.
+     *    @param size               The sizes of the window.
+     *    @return The output sub-matrix.
+     */
     inline MArray<T, D> window(const std::size_t start[D], const std::size_t size[D])
     {
         MArray<T, D> w;
@@ -226,6 +304,11 @@ public:
         return w;
     }
 
+    /**
+     *    @brief Gives the size of this matrix in the d dimension.
+     *    @param d                  The dimension whose size is requested.
+     *    @return The size of this matrix at dimension d.
+     */
     inline std::size_t size(const std::size_t d = 0) const
     {
         if (d >= D) {
@@ -236,12 +319,20 @@ public:
         return _size[d];
     }
 
+    /**
+     *    @brief Gives the sizes of this matrix.
+     *    @param s                  The output array that will contain the sizes of this matrix.
+     */
     inline void size(std::size_t s[D]) const
     {
         for (std::size_t i = 0; i < D; ++i)
             s[i] = _size[i];
     }
 
+    /**
+     *    @brief Gives the total size (number of elements in memory) of this matrix.
+     *    @return The total number of elements in memory.
+     */
     inline std::size_t totalSize() const
     {
         std::size_t total = _size[0];
@@ -250,6 +341,12 @@ public:
         return total;
     }
 
+    /**
+     *    @brief Gives the total offset, from the beginning of the stored array, of the i-th element at dimension d.
+     *    @param i                  The element whose offset is requested.
+     *    @param d                  The dimension whose i-th element offset is requested.
+     *    @return The total offset from the beggining of the stored array of the i-th element at dimension d.
+     */
     inline std::size_t accumulatedOffset(const std::size_t i, const std::size_t d = 0) const
     {
         if (d >= D) {
@@ -267,15 +364,25 @@ public:
 
 private:
     friend class MArray<T, D+1>;
-    T                  *_array;
-    std::size_t         _accumulatedOffset;
-    std::size_t         _size[D];
-    std::size_t         _offset[D];
+    T                      *_array;                 ///< Pointer in memory to the first element of this matrix.
+    std::size_t             _accumulatedOffset;     ///< Offset of the first element of this matrix from the beginning of the stored array.
+    std::size_t             _size[D];               ///< Sizes of this matrix, for each dimension.
+    std::size_t             _offset[D];             ///< Jumps' offsets from the beginning of a "row" to the beginning of the next one, for each dimension.
 };
 
+
+
+/// The MArray class represents a 1-dimensional dope vector (https://en.wikipedia.org/wiki/Dope_vector) of scalar type T.
+/// Given an array stored sequentially in memory, this class wraps it provinding a mono-dimensional matrix interface.
+/// It is possible to take slices, windows or even permutations without actually modifying the underlying memory, no element
+/// hence moved.
+/// This actually is the basis of the recursive class MArray<T, D> above.
 template < typename T >
 class MArray<T, 1> {
 public:
+    /**
+     *    @brief Default constructor.
+     */
     MArray()
         : _array(nullptr)
         , _accumulatedOffset(0)
@@ -284,6 +391,12 @@ public:
         _offset[0] = 0;
     }
 
+    /**
+     *    @brief Initializer contructor.
+     *    @param array              Pointer to (part of) an array in memory to wrap.
+     *    @param accumulatedOffset  Offset from the origin of the array.
+     *    @param size               Size of the 1-dimensional matrix.
+     */
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size)
         : _array(array)
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
@@ -292,6 +405,13 @@ public:
         _offset[0] = _array ? 1 : 0;
     }
 
+    /**
+     *    @brief Initializer contructor.
+     *    @param array              Pointer to (part of) an array in memory to wrap.
+     *    @param accumulatedOffset  Offset from the origin of the array.
+     *    @param size               Size of the 1-dimensional matrix.
+     *    @param offset             Offset in memory from one element to the next one.
+     */
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size, const std::size_t offset)
         : _array(array)
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
@@ -300,6 +420,12 @@ public:
         _offset[0] = _array ? offset : 0;
     }
 
+    /**
+     *    @brief Initializer contructor.
+     *    @param array              Pointer to (part of) an array in memory to wrap.
+     *    @param accumulatedOffset  Offset from the origin of the array.
+     *    @param size               Size of the 1-dimensional matrix.
+     */
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[1])
         : _array(const_cast<T*>(array))
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
@@ -308,6 +434,13 @@ public:
         _offset[0] = _array ? 1 : 0;
     }
 
+    /**
+     *    @brief Initializer contructor.
+     *    @param array              Pointer to (part of) an array in memory to wrap.
+     *    @param accumulatedOffset  Offset from the origin of the array.
+     *    @param size               Size of the 1-dimensional matrix.
+     *    @param offset             Offset in memory from one element to the next one.
+     */
     MArray(const T *array, const std::size_t accumulatedOffset, const std::size_t size[1], const std::size_t offset[1])
         : _array(const_cast<T*>(array))
         , _accumulatedOffset(_array ? accumulatedOffset : 0)
@@ -316,6 +449,9 @@ public:
         _offset[0] = _array ? offset[0] : 0;
     }
 
+    /**
+     *    @brief Copy constructor.
+     */
     MArray(const MArray &ma)
         : _array(ma._array)
         , _accumulatedOffset(ma._accumulatedOffset)
@@ -324,6 +460,9 @@ public:
         _offset[0] = ma._offset[0];
     }
 
+    /**
+     *    @brief Move constructor.
+     */
     MArray(MArray &&ma)
         : _array(ma._array)
         , _accumulatedOffset(ma._accumulatedOffset)
@@ -336,6 +475,9 @@ public:
         ma._offset[0] = 0;
     }
 
+    /**
+     *    @brief Copy assignment operator.
+     */
     MArray & operator=(const MArray &ma)
     {
         if (&ma != this) {
@@ -347,6 +489,9 @@ public:
         return *this;
     }
 
+    /**
+     *    @brief Move assignment operator.
+     */
     MArray & operator=(MArray &&ma)
     {
         if (&ma != this) {
@@ -362,6 +507,11 @@ public:
         return *this;
     }
 
+    /**
+     *    @brief Gives constant access to the i-th element, i.e. m[i].
+     *    @param i                  The i-th element of this vector
+     *    @return The output element at i.
+     */
     inline const T & operator[](const std::size_t i) const
     {
         if (i >= _size[0]) {
@@ -372,6 +522,11 @@ public:
         return *(_array + i * _offset[0]);
     }
 
+    /**
+     *    @brief Gives access to the i-th element, i.e. m[i].
+     *    @param i                  The i-th element of this vector
+     *    @return The output element at i.
+     */
     inline T & operator[](const std::size_t i)
     {
         if (i >= _size[0]) {
@@ -382,16 +537,32 @@ public:
         return *(_array + i * _offset[0]);
     }
 
+    /**
+     *    @brief Gives constant access to the i-th element, i.e. m[i].
+     *    @param i                  The i-th element of this vector.
+     *    @return The output element at i.
+     */
     inline const T & slice(const std::size_t i) const
     {
         return *this[i];
     }
 
+    /**
+     *    @brief Gives access to the i-th element, i.e. m[i].
+     *    @param i                  The i-th element of this vector.
+     *    @return The output element at i.
+     */
     inline T & slice(const std::size_t i)
     {
         return *this[i];
     }
 
+    /**
+     *    @brief Extracts a 1-dimensional window from this vector.
+     *    @param start              The initial offset of the window.
+     *    @param size               The size of the window.
+     *    @param p                  The output sub-vector.
+     */
     inline void window(const std::size_t start[1], const std::size_t size[1], MArray<T, 1> &p)
     {
         if (start[0] >= _size[0]) {
@@ -410,6 +581,12 @@ public:
         p._offset[0] = _offset[0];
     }
 
+    /**
+     *    @brief Extracts a 1-dimensional window from this vector.
+     *    @param start              The initial offset of the window.
+     *    @param size               The size of the window.
+     *    @return The output sub-vector.
+     */
     inline MArray<T, 1> window(const std::size_t start[1], const std::size_t size[1])
     {
         MArray<T, 1> w;
@@ -417,6 +594,12 @@ public:
         return w;
     }
 
+    /**
+     *    @brief Extracts a 1-dimensional window from this vector.
+     *    @param start              The initial offset of the window.
+     *    @param size               The size of the window.
+     *    @param p                  The output sub-vector.
+     */
     inline void window(const std::size_t start, const std::size_t size, MArray<T, 1> &p)
     {
         if (start >= _size[0]) {
@@ -435,6 +618,12 @@ public:
         p._offset[0] = _offset[0];
     }
 
+    /**
+     *    @brief Extracts a 1-dimensional window from this vector.
+     *    @param start              The initial offset of the window.
+     *    @param size               The size of the window.
+     *    @return The output sub-vector.
+     */
     inline MArray<T, 1> window(const std::size_t start, const std::size_t size)
     {
         MArray<T, 1> w;
@@ -442,21 +631,38 @@ public:
         return w;
     }
 
+    /**
+     *    @brief Gives the size of this vector.
+     *    @return The output size of this vector.
+     */
     inline std::size_t size() const
     {
         return _size[0];
     }
 
+    /**
+     *    @brief Gives the size of this vector.
+     *    @param s                  The output size of this vector.
+     */
     inline void size(std::size_t s[1]) const
     {
         s[0] = _size[0];
     }
 
+    /**
+     *    @brief Gives the total size (number of elements in memory) of this vector.
+     *    @return The total number of elements in memory.
+     */
     inline std::size_t totalSize() const
     {
         return size();
     }
 
+    /**
+     *    @brief Gives the total offset, from the beginning of the stored array, of the i-th element.
+     *    @param i                  The element whose offset is requested.
+     *    @return The total offset from the beggining of the stored array of the i-th element.
+     */
     inline std::size_t accumulatedOffset(const std::size_t i = 0) const
     {
         if (i >= _size[0]) {
@@ -469,20 +675,29 @@ public:
 
 private:
     friend class MArray<T, 2>;
-    T                  *_array;
-    std::size_t         _accumulatedOffset;
-    std::size_t         _size[1];
-    std::size_t         _offset[1];
+    T                      *_array;                 ///< Pointer in memory to the first element of this vector.
+    std::size_t             _accumulatedOffset;     ///< Offset of the first element of this vector from the beginning of the stored array.
+    std::size_t             _size[1];               ///< Size of this vector.
+    std::size_t             _offset[1];             ///< Jumps' offset from an element to the next one.
 };
 
+
+/// The MMArray class is a wrapper of MArray providing a built-in memory storage and management.
 template < typename T, std::size_t D >
 class MMArray : public MArray<T, D> {
 public:
+    /**
+     *    @brief Default constructor.
+     */
     MMArray()
         : MArray<T, D>()
         , _arrayPtr(nullptr)
     { }
 
+    /**
+     *    @brief Initializer contructor.
+     *    @param size               Sizes of the D-dimensional matrix.
+     */
     MMArray(const std::size_t size[D])
         : MArray<T, D>()
         , _arrayPtr(nullptr)
@@ -490,6 +705,9 @@ public:
         resize(size);
     }
 
+    /**
+     *    @brief Copy constructor.
+     */
     MMArray(const MMArray<T, D> &mma)
         : MArray<T, D>()
         , _arrayPtr(nullptr)
@@ -497,11 +715,17 @@ public:
         *this = mma;
     }
 
+    /**
+     *    @brief Move constructor.
+     */
     MMArray(MMArray &&mma)
         : MArray<T, D>(std::forward<MMArray<T, D>>(mma))
         , _arrayPtr(std::move(mma._arrayPtr))
     { }
 
+    /**
+     *    @brief Copy assignment operator.
+     */
     MMArray & operator=(const MMArray &mma)
     {
         if (&mma != this) {
@@ -513,6 +737,9 @@ public:
         return *this;
     }
 
+    /**
+     *    @brief Move assignment operator.
+     */
     MMArray & operator=(MMArray &&mma)
     {
         if (&mma != this) {
@@ -522,6 +749,10 @@ public:
         return *this;
     }
 
+    /**
+     *    @brief Changes the sizes of this matrix.
+     *    @param size               The new sizes.
+     */
     inline void resize(const std::size_t size[D])
     {
         std::size_t total = size[0];
@@ -536,6 +767,9 @@ public:
         }
     }
 
+    /**
+     *    @brief Empties this array, making its size 0.
+     */
     inline void clear()
     {
         _arrayPtr.reset(nullptr);
@@ -543,7 +777,7 @@ public:
     }
 
 private:
-    std::unique_ptr<T[]>    _arrayPtr;
+    std::unique_ptr<T[]>    _arrayPtr;              ///< Sharp pointer in memory to this matrix, with automatic storage (de)allocation.
 };
 
 }

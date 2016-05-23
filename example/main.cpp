@@ -14,8 +14,8 @@
 #include <iomanip>
 #include <vector>
 #include <chrono>
-#include <distance_transform.hpp>
 
+#include <distance_transform.hpp>
 using namespace dt;
 
 int main(int argc, char *argv[])
@@ -30,13 +30,16 @@ int main(int argc, char *argv[])
             else
                 f[i][j] = std::numeric_limits<float>::max();
         }
+
     DistanceTransform::initializeIndices(indices);  // this is not necessary, since distanceTransformL2() already does it
+
     std::cout << "indices:" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
         for (std::size_t j = 0; j < size[1]; ++j)
             std::cout << std::setw(7) << indices[i][j] << ' ';
         std::cout << std::endl;
     }
+
     std::cout << std::endl << "Window [2:4;3:6]:" << std::endl;
     std::vector<std::size_t> winStart({2, 3});
     std::vector<std::size_t> winSize({3, 4});
@@ -46,10 +49,12 @@ int main(int argc, char *argv[])
             std::cout << std::setw(7) << win[i][j] << ' ';
         std::cout << std::endl;
     }
+
     std::cout << std::endl << "Slice 2:" << std::endl;
     MArray<std::size_t, 1> sl = indices.slice(1, 2);
     for (std::size_t j = 0; j < sl.size(); ++j)
         std::cout << std::setw(7) << sl[j] << ' ';
+
     std::cout <<  std::endl <<"Window [4:9] of slide 2:" << std::endl;
     sl = sl.window(4, 6);
     for (std::size_t j = 0; j < sl.size(); ++j)
@@ -63,9 +68,13 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
 
+
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+
     DistanceTransform::distanceTransformL2(f, f, indices, true);    // true for keeping squared distances, false for square roots
+
     std::cout << std::endl << "2D distance function computed in: " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count() << " ns." << std::endl;
+
 
     std::cout << std::endl << "D (squared):" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
@@ -73,6 +82,7 @@ int main(int argc, char *argv[])
             std::cout << std::setw(4) << std::setprecision(1) << std::fixed << f[i][j] << ' ';
         std::cout << std::endl;
     }
+
     std::cout << "indices:" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
         for (std::size_t j = 0; j < size[1]; ++j)

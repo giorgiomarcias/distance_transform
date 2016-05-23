@@ -18,8 +18,18 @@
 
 namespace dt {
 
-class DistanceTransform{
+/// The DistanceTransform class provides static method to compute a distance field over any multi-dimensional regularly sampled function.
+/// The dimension is fixed at compile time.
+/// It is also possible to compute the index of the nearest minimum of each sample.
+class DistanceTransform {
 public:
+    /**
+     *    @brief Compute the L2-norm distance field D of a DIM-dimensional sampled function f. D gets the distance from the local minima of f.
+     *    @param f              A DIM-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @note Arrays f and D can also be the same.
+     */
     template < typename Scalar = float, std::size_t DIM = 2 >
     inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, const bool squared = false)
     {
@@ -48,6 +58,13 @@ public:
             element_wiseSquareRoot(D);
     }
 
+    /**
+     *    @brief Compute the L2-norm distance field D of a 1-dimensional sampled function f. D gets the distance from the local minima of f.
+     *    @param f              A 1-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @note Arrays f and D can also be the same.
+     */
     template < typename Scalar = float >
     inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, const bool squared = false)
     {
@@ -61,6 +78,15 @@ public:
         }
     }
 
+    /**
+     *    @brief Compute the L2-norm distance field D of a DIM-dimensional sampled function f. D gets the distance from the local minima of f.
+     *           Compute also the (index of the) nearest local minimum of each sample.
+     *    @param f              A DIM-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     *    @param I              Resulting array containing the (index of the) local minimum for each sample.
+     *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @note Arrays f and D can also be the same.
+     */
     template < typename Scalar = float, std::size_t DIM = 2 >
     inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MMArray<std::size_t, DIM> &I, const bool squared = false)
     {
@@ -101,6 +127,15 @@ public:
             element_wiseSquareRoot(D);
     }
 
+    /**
+     *    @brief Compute the L2-norm distance field D of a 1-dimensional sampled function f. D gets the distance from the local minima of f.
+     *           Compute also the (index of the) nearest local minimum of each sample.
+     *    @param f              A 1-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     *    @param I              Resulting array containing the (index of the) local minimum for each sample.
+     *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @note Arrays f and D can also be the same.
+     */
     template < typename Scalar = float >
     inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, MMArray<std::size_t, 1> &I, const bool squared = false)
     {
@@ -115,6 +150,10 @@ public:
         }
     }
 
+    /**
+     *    @brief Set up the initial indices of a DIM-dimensional sampled function.
+     *    @param I              Resulting array containing the initial index for each sample.
+     */
     template < std::size_t DIM >
     inline static void initializeIndices(MArray<std::size_t, DIM> &I)
     {
@@ -125,13 +164,24 @@ public:
         }
     }
 
+    /**
+     *    @brief Set up the initial indices of a 1-dimensional sampled function.
+     *    @param I              Resulting array containing the initial index for each sample.
+     */
     inline static void initializeIndices(MArray<std::size_t, 1> &I)
     {
         for (std::size_t q = 0; q < I.size(); ++q)
             I[q] = I.accumulatedOffset(q);
     }
 
+
+
 private:
+    /**
+     *    @brief The actual distance field computation is done by recursive calls of this method, in lower dimenional sub-functions.
+     *    @param f              A DIM-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     */
     template < typename Scalar = float, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
     {
@@ -144,6 +194,11 @@ private:
         }
     }
 
+    /**
+     *    @brief The actual distance field computation as in the "Distance Transforms of Sampled Functions" paper, performed in a mono-dimensional function.
+     *    @param f              A 1-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     */
     template < typename Scalar = float >
     inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D)
     {
@@ -186,6 +241,12 @@ private:
         delete[] v;
     }
 
+    /**
+     *    @brief The actual distance field computation is done by recursive calls of this method, in lower dimenional sub-functions.
+     *    @param f              A DIM-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     *    @param I              Resulting array containing the (index of the) local minimum for each sample.
+     */
     template < typename Scalar = float, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const MArray<std::size_t, DIM> &Ipre, MArray<std::size_t, DIM> &Ipost)
     {
@@ -201,6 +262,12 @@ private:
         }
     }
 
+    /**
+     *    @brief The actual distance field computation as in the "Distance Transforms of Sampled Functions" paper, performed in a mono-dimensional function.
+     *    @param f              A 1-dimensional, regularly sampled function.
+     *    @param D              The resulting distance field of f.
+     *    @param I              Resulting array containing the (index of the) local minimum for each sample.
+     */
     template < typename Scalar = float >
     inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const MArray<std::size_t, 1> &Ipre, MArray<std::size_t, 1> &Ipost)
     {
@@ -246,6 +313,10 @@ private:
     }
 
 public:
+    /**
+     *    @brief Compute the square root of each individual element of a DIM-dimensional array.
+     *    @param m              A DIM-dimensioanl array whose element have to be square rooted.
+     */
     template < typename Scalar = float, std::size_t DIM >
     inline static void element_wiseSquareRoot(MArray<Scalar, DIM> &m)
     {
@@ -256,6 +327,10 @@ public:
         }
     }
 
+    /**
+     *    @brief Compute the square root of each individual element of a 1-dimensional array.
+     *    @param m              A 1-dimensioanl array whose element have to be square rooted.
+     */
     template < typename Scalar = float >
     inline static void element_wiseSquareRoot(MArray<Scalar, 1> &m)
     {
