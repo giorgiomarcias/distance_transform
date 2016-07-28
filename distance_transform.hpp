@@ -43,11 +43,16 @@ public:
         MArray<Scalar, DIM> tmpD(D);
         MArray<Scalar, DIM-1> f_dq;
         MArray<Scalar, DIM-1> D_dq;
+        std::size_t order[DIM-1];
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d) {
+            for (std::size_t o = 0; o < DIM-1; ++o)
+                order[o] = (d + o) % (DIM-1);
             for (std::size_t q = 0; q < tmpF.size(d); ++q) {
                 tmpF.slice(d, q, f_dq);
+                f_dq.permute(order, f_dq);
                 tmpD.slice(d, q, D_dq);
+                D_dq.permute(order, D_dq);
                 distanceL2(f_dq, D_dq);
             }
             std::swap(tmpD, tmpF);
@@ -105,15 +110,22 @@ public:
         MArray<Scalar, DIM-1> D_dq;
         MArray<std::size_t, DIM-1> Ipre_dq;
         MArray<std::size_t, DIM-1> Ipost_dq;
+        std::size_t order[DIM-1];
         // initialize I
         initializeIndices(Ipre);
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d) {
+            for (std::size_t o = 0; o < DIM-1; ++o)
+                order[o] = (d + o) % (DIM-1);
             for (std::size_t q = 0; q < tmpF.size(d); ++q) {
                 tmpF.slice(d, q, f_dq);
+                f_dq.permute(order, f_dq);
                 tmpD.slice(d, q, D_dq);
+                D_dq.permute(order, D_dq);
                 Ipre.slice(d, q, Ipre_dq);
+                Ipre_dq.permute(order, Ipre_dq);
                 Ipost.slice(d, q, Ipost_dq);
+                Ipost_dq.permute(order, Ipost_dq);
                 distanceL2(f_dq, D_dq, Ipre_dq, Ipost_dq);
             }
             std::swap(tmpD, tmpF);

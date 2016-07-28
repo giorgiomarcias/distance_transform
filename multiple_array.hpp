@@ -562,6 +562,44 @@ public:
     }
 
     /**
+     *    @brief Reorders the sub-matrixes s.t. the one at 0 <= i < 1 goes to 0 <= order[i] < 1, i.e. m[0] swaps with m[order[0]].
+     *    @param order              A permutation of the matrix indices.
+     *    @param p                  The output permuted matrix.
+     *    @note In practice, this does nothing. It is kept for coherency with higher dimensional MArray.
+     */
+    inline void permute(const std::size_t order[1], MArray<T, 1> &p)
+    {
+        for (std::size_t d = 0; d < 1; ++d) {
+            if (order[d] >= 1) {
+                std::stringstream stream;
+                stream << "Index " << order[d] << " is out of range [0, 0]";
+                throw std::out_of_range(stream.str());
+            }
+        }
+        if (&p == this)
+            return;
+        p._array = _array;
+        p._accumulatedOffset = _accumulatedOffset;
+        for (std::size_t d = 0; d < 1; ++d) {
+            p._size[d] = _size[order[d]];
+            p._offset[d] = _offset[order[d]];
+        }
+    }
+
+    /**
+     *    @brief Reorders the sub-matrixes s.t. the one at 0 <= i < 1 goes to 0 <= order[i] < 1, i.e. m[0] swaps with m[order[0]].
+     *    @param order              A permutation of the matrix indices.
+     *    @return The output permuted matrix.
+     *    @note In practice, this does nothing. It is kept for coherency with higher dimensional MArray.
+     */
+    inline MArray<T, 1> permute(const std::size_t order[1])
+    {
+        MArray<T, 1> p;
+        permute(order, p);
+        return p;
+    }
+
+    /**
      *    @brief Extracts a 1-dimensional window from this vector.
      *    @param start              The initial offset of the window.
      *    @param size               The size of the window.
