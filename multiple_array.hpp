@@ -268,9 +268,9 @@ public:
      *    @brief Extracts a D-dimensional window from this matrix.
      *    @param start              The initial offset of the window in each dimension.
      *    @param size               The sizes of the window.
-     *    @param p                  The output sub-matrix.
+     *    @param w                  The output sub-matrix.
      */
-    inline void window(const std::size_t start[D], const std::size_t size[D], MArray<T, D> &p)
+    inline void window(const std::size_t start[D], const std::size_t size[D], MArray<T, D> &w)
     {
         for (std::size_t d = 0; d < D; ++d) {
             if (start[d] >= _size[d]) {
@@ -287,11 +287,11 @@ public:
         std::size_t newAccumulatedOffset = _accumulatedOffset;
         for (std::size_t d = 0; d < D; ++d)
             newAccumulatedOffset += _offset[d] * start[d];
-        p._array = _array + (newAccumulatedOffset - _accumulatedOffset);
-        p._accumulatedOffset = newAccumulatedOffset;
+        w._array = _array + (newAccumulatedOffset - _accumulatedOffset);
+        w._accumulatedOffset = newAccumulatedOffset;
         for (std::size_t d = 0; d < D; ++d) {
-            p._size[d] = size[d];
-            p._offset[d] = _offset[d];
+            w._size[d] = size[d];
+            w._offset[d] = _offset[d];
         }
     }
 
@@ -306,6 +306,20 @@ public:
         MArray<T, D> w;
         window(start, size, w);
         return w;
+    }
+
+    /**
+     *    @brief Copies all single elements from o to this matrix.
+     *    @param o                  The matrix to copy from.
+     */
+    virtual inline void import(const MArray<T, D> &o)
+    {
+        if (&o == this)
+            return;
+        if (_size[0] != o._size[0])
+            throw std::out_of_range("Matrixes do not have same size.");
+        for (std::size_t i = 0; i < _size[0]; ++i)
+            operator[](i).import(o[i]);
     }
 
     /**
@@ -603,9 +617,9 @@ public:
      *    @brief Extracts a 1-dimensional window from this vector.
      *    @param start              The initial offset of the window.
      *    @param size               The size of the window.
-     *    @param p                  The output sub-vector.
+     *    @param w                  The output sub-vector.
      */
-    inline void window(const std::size_t start[1], const std::size_t size[1], MArray<T, 1> &p)
+    inline void window(const std::size_t start[1], const std::size_t size[1], MArray<T, 1> &w)
     {
         if (start[0] >= _size[0]) {
             std::stringstream stream;
@@ -618,10 +632,10 @@ public:
             throw std::out_of_range(stream.str());
         }
         std::size_t newAccumulatedOffset = _accumulatedOffset + _offset[0] * start[0];
-        p._array = _array + (newAccumulatedOffset - _accumulatedOffset);
-        p._accumulatedOffset = newAccumulatedOffset;
-        p._size[0] = size[0];
-        p._offset[0] = _offset[0];
+        w._array = _array + (newAccumulatedOffset - _accumulatedOffset);
+        w._accumulatedOffset = newAccumulatedOffset;
+        w._size[0] = size[0];
+        w._offset[0] = _offset[0];
     }
 
     /**
@@ -641,9 +655,9 @@ public:
      *    @brief Extracts a 1-dimensional window from this vector.
      *    @param start              The initial offset of the window.
      *    @param size               The size of the window.
-     *    @param p                  The output sub-vector.
+     *    @param w                  The output sub-vector.
      */
-    inline void window(const std::size_t start, const std::size_t size, MArray<T, 1> &p)
+    inline void window(const std::size_t start, const std::size_t size, MArray<T, 1> &w)
     {
         if (start >= _size[0]) {
             std::stringstream stream;
@@ -655,10 +669,10 @@ public:
             stream << "Window size " << size << " is out of range [" << 0 << ", " << _size[0] - start << ']';
             throw std::out_of_range(stream.str());
         }
-        p._accumulatedOffset = _accumulatedOffset + _offset[0] * start;
-        p._array = _array + (p._accumulatedOffset - _accumulatedOffset);
-        p._size[0] = size;
-        p._offset[0] = _offset[0];
+        w._accumulatedOffset = _accumulatedOffset + _offset[0] * start;
+        w._array = _array + (w._accumulatedOffset - _accumulatedOffset);
+        w._size[0] = size;
+        w._offset[0] = _offset[0];
     }
 
     /**
@@ -672,6 +686,20 @@ public:
         MArray<T, 1> w;
         window(start, size, w);
         return w;
+    }
+
+    /**
+     *    @brief Copies all single elements from o to this matrix.
+     *    @param o                  The matrix to copy from.
+     */
+    virtual inline void import(const MArray<T, 1> &o)
+    {
+        if (&o == this)
+            return;
+        if (_size[0] != o._size[0])
+            throw std::out_of_range("Matrixes do not have same size.");
+        for (std::size_t i = 0; i < _size[0]; ++i)
+            operator[](i) = o[i];
     }
 
     /**
@@ -817,6 +845,25 @@ public:
     {
         _arrayPtr.reset(nullptr);
         MArray<T, D>::operator=(MArray<T, D>());
+    }
+
+    /**
+     *    @brief Copies all single elements from o to this matrix.
+     *    @param o                  The matrix to copy from.
+     */
+    inline void import(const MArray<T, D> &o)
+    {
+        if (&o == this)
+            return;
+        try {
+            const MMArray<T, D> &oo = dynamic_cast<const MMArray<T, D> &>(o);
+            for (std::size_t d = 0; d < D; ++d)
+                if (MArray<T, D>::size(d) != oo.size(d))
+                    throw std::out_of_range("Matrixes do not have same size.");
+            std::memcpy(_arrayPtr.get(), oo._arrayPtr.get(), MArray<T, D>::totalSize() * sizeof(T));
+        } catch(std::bad_cast &bc) {
+            MArray<T, D>::import(o);
+        }
     }
 
 private:

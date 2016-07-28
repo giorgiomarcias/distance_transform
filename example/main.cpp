@@ -40,13 +40,13 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
 
-    std::cout << std::endl << "Window [2:4;3:6]:" << std::endl;
+    std::cout << std::endl << "Window [2:6;3:8]:" << std::endl;
     std::vector<std::size_t> winStart({2, 3});
-    std::vector<std::size_t> winSize({3, 4});
-    MArray<std::size_t, 2> win = indices.window(winStart.data(), winSize.data());
-    for (std::size_t i = 0; i < win.size(); ++i) {
-        for (std::size_t j = 0; j < win[i].size(); ++j)
-            std::cout << std::setw(7) << win[i][j] << ' ';
+    std::vector<std::size_t> winSize({5, 6});
+    MArray<std::size_t, 2> indicesWin = indices.window(winStart.data(), winSize.data());
+    for (std::size_t i = 0; i < indicesWin.size(); ++i) {
+        for (std::size_t j = 0; j < indicesWin[i].size(); ++j)
+            std::cout << std::setw(7) << indicesWin[i][j] << ' ';
         std::cout << std::endl;
     }
 
@@ -75,11 +75,8 @@ int main(int argc, char *argv[])
 
 
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-
     DistanceTransform::distanceTransformL2(f, f, indices, true);    // true for keeping squared distances, false for square roots
-
     std::cout << std::endl << "2D distance function computed in: " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count() << " ns." << std::endl;
-
 
     std::cout << std::endl << "D (squared):" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
@@ -88,12 +85,52 @@ int main(int argc, char *argv[])
         std::cout << std::endl;
     }
 
-    std::cout << "indices:" << std::endl;
+    std::cout << std::endl << "indices:" << std::endl;
     for (std::size_t i = 0; i < size[0]; ++i) {
         for (std::size_t j = 0; j < size[1]; ++j)
             std::cout << std::setw(7) << indices[i][j] << ' ';
         std::cout << std::endl;
     }
+
+
+    for (std::size_t i = 0; i < size[0]; ++i)
+        for (std::size_t j = 0; j < size[1]; ++j)
+            f[i][j] = std::numeric_limits<float>::max();
+    MArray<float, 2> fWin = f.window(winStart.data(), winSize.data());
+    for (std::size_t i = 0; i < fWin.size(); ++i)
+        for (std::size_t j = 0; j < fWin[i].size(); ++j)
+            if (i == 0 || i == fWin.size()-1 || j == 0 || j == fWin[i].size()-1)
+                fWin[i][j] = 0.0f;
+            else
+                fWin[i][j] = std::numeric_limits<float>::max();
+    DistanceTransform::initializeIndices(indices);
+
+    std::cout << std::endl << "f reset:" << std::endl;
+    for (std::size_t i = 0; i < size[0]; ++i) {
+        for (std::size_t j = 0; j < size[1]; ++j)
+            std::cout << std::setw(4) << std::setprecision(1) << std::scientific << f[i][j] << ' ';
+        std::cout << std::endl;
+    }
+
+    start = std::chrono::steady_clock::now();
+    DistanceTransform::distanceTransformL2(fWin, fWin, indicesWin, true);
+    std::cout << std::endl << "2D distance function computed on the window in: " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count() << " ns." << std::endl;
+
+    std::cout << std::endl << "D (squared):" << std::endl;
+    for (std::size_t i = 0; i < size[0]; ++i) {
+        for (std::size_t j = 0; j < size[1]; ++j)
+            std::cout << std::setw(4) << std::setprecision(1) << std::scientific << f[i][j] << ' ';
+        std::cout << std::endl;
+    }
+
+    std::cout << std::endl << "indices:" << std::endl;
+    for (std::size_t i = 0; i < size[0]; ++i) {
+        for (std::size_t j = 0; j < size[1]; ++j)
+            std::cout << std::setw(7) << indices[i][j] << ' ';
+        std::cout << std::endl;
+    }
+
+
 
     // 2D
     size = {320, 240};
@@ -117,7 +154,6 @@ int main(int argc, char *argv[])
     start = std::chrono::steady_clock::now();
     DistanceTransform::distanceTransformL2(f3D, f3D);
     std::cout << std::endl << size[0] << 'x' << size[1] << 'x' << size[2] << " distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
-    std::cout << "f3D[0][0][0] == 0.0 : " << std::boolalpha << (f3D[0][0][0] == 0.0f) << " -  f3D[399][319][239] == "  << std::sqrt(399.0f*399.0f + 319.0f*319.0f + 239.0f*239.0f) << " : " << std::boolalpha << (f3D[399][319][239] == std::sqrt(399.0f*399.0f + 319.0f*319.0f + 239.0f*239.0f)) << std::endl << std::endl;
 
     // 6D
     size = {5, 5, 5, 5, 5, 5};
@@ -133,7 +169,8 @@ int main(int argc, char *argv[])
     start = std::chrono::steady_clock::now();
     DistanceTransform::distanceTransformL2(f6D, f6D);
     std::cout << std::endl << size[0] << 'x' << size[1] << 'x' << size[2] << 'x' << size[3] << 'x' << size[4] << 'x' << size[5] << " distance function computed in: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() << " ms." << std::endl;
-    std::cout << "f6D[0][0][0][0][0][0] == 0.0 : " << std::boolalpha << (f6D[0][0][0][0][0][0] == 0.0f) << " - f6D[4][4][4][4][4] == "  << std::sqrt(4.0f*4.0f * 6) << " : " << std::boolalpha << (f6D[4][4][4][4][4][4] == std::sqrt(4.0f*4.0f * 6)) << " - f6D[0][0][0][0][4] == "  << std::sqrt(4.0f*4.0f) << " : " << std::boolalpha << (f6D[0][0][0][0][0][4] == std::sqrt(4.0f*4.0f)) << std::endl << std::endl;
+
+    std::cout << std::endl;
 
     return 0;
 }

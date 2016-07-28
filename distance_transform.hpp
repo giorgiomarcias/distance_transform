@@ -31,19 +31,26 @@ public:
      *    @note Arrays f and D can also be the same.
      */
     template < typename Scalar = float, std::size_t DIM = 2 >
-    inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, const bool squared = false)
+    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const bool squared = false)
     {
-        if (&D != &f) {
-            std::size_t size[DIM];
-            f.size(size);
-            D.resize(size);
-        }
-        MMArray<Scalar, DIM> fCopy(f);
+        std::size_t fSize[DIM], DSize[DIM];
+        f.size(fSize);
+        D.size(DSize);
+        for (std::size_t d = 0; d < DIM; ++d)
+            if (DSize[d] != fSize[d])
+                throw std::out_of_range("Matrixes do not have same size.");
+
+        MMArray<Scalar, DIM> fCopy(fSize);
+        fCopy.import(f);
+        MMArray<Scalar, DIM> DCopy(DSize);
+
         MArray<Scalar, DIM> tmpF(fCopy);
-        MArray<Scalar, DIM> tmpD(D);
+        MArray<Scalar, DIM> tmpD(DCopy);
         MArray<Scalar, DIM-1> f_dq;
         MArray<Scalar, DIM-1> D_dq;
+
         std::size_t order[DIM-1];
+
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d) {
             for (std::size_t o = 0; o < DIM-1; ++o)
@@ -58,7 +65,10 @@ public:
             std::swap(tmpD, tmpF);
         }
         if (DIM % 2 == 0)
-            D = std::move(fCopy);
+            DCopy = std::move(fCopy);
+
+        D.import(DCopy);
+
         if (!squared)
             element_wiseSquareRoot(D);
     }
@@ -71,16 +81,18 @@ public:
      *    @note Arrays f and D can also be the same.
      */
     template < typename Scalar = float >
-    inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, const bool squared = false)
+    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const bool squared = false)
     {
-        std::size_t size[1];
-        f.size(size);
-        if (&D != &f)
-            D.resize(size);
+        std::size_t fSize[1], DSize[1];
+        f.size(fSize);
+        D.size(DSize);
+        if (DSize[0] != fSize[0])
+            throw std::out_of_range("Matrixes do not have same size.");
+
         distanceL2(f, D);
-        if (!squared) {
+
+        if (!squared)
             element_wiseSquareRoot(D);
-        }
     }
 
     /**
@@ -93,26 +105,36 @@ public:
      *    @note Arrays f and D can also be the same.
      */
     template < typename Scalar = float, std::size_t DIM = 2 >
-    inline static void distanceTransformL2(const MMArray<Scalar, DIM> &f, MMArray<Scalar, DIM> &D, MMArray<std::size_t, DIM> &I, const bool squared = false)
+    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
     {
-        std::size_t size[DIM];
-        f.size(size);
-        if (&D != &f)
-            D.resize(size);
-        I.resize(size);
-        MMArray<Scalar, DIM> fCopy(f);          // make a safe copy of f
+        std::size_t fSize[DIM], DSize[DIM], ISize[DIM];
+        f.size(fSize);
+        D.size(DSize);
+        I.size(ISize);
+        for (std::size_t d = 0; d < DIM; ++d)
+            if (DSize[d] != fSize[d] || ISize[d] != fSize[d])
+                throw std::out_of_range("Matrixes do not have same size.");
+
+        // initialize I
+        initializeIndices(I);
+
+        MMArray<Scalar, DIM> fCopy(fSize);
+        fCopy.import(f);
+        MMArray<Scalar, DIM> DCopy(DSize);
+        MMArray<std::size_t, DIM> ICopyPre(ISize), ICopyPost(ISize);
+        ICopyPre.import(I);
+
         MArray<Scalar, DIM> tmpF(fCopy);
         MArray<Scalar, DIM> tmpD(D);
-        MMArray<std::size_t, DIM> ICopy(I);     // make a safe copy of I
-        MArray<std::size_t, DIM> Ipre(ICopy);
-        MArray<std::size_t, DIM> Ipost(I);
+        MArray<std::size_t, DIM> Ipre(ICopyPre);
+        MArray<std::size_t, DIM> Ipost(ICopyPost);
         MArray<Scalar, DIM-1> f_dq;
         MArray<Scalar, DIM-1> D_dq;
         MArray<std::size_t, DIM-1> Ipre_dq;
         MArray<std::size_t, DIM-1> Ipost_dq;
+
         std::size_t order[DIM-1];
-        // initialize I
-        initializeIndices(Ipre);
+
         // compute for each slice
         for (std::size_t d = 0; d < DIM; ++d) {
             for (std::size_t o = 0; o < DIM-1; ++o)
@@ -131,10 +153,15 @@ public:
             std::swap(tmpD, tmpF);
             std::swap(Ipost, Ipre);
         }
+
         if (DIM % 2 == 0) {
-            D = std::move(fCopy);
-            I = std::move(ICopy);
+            DCopy = std::move(fCopy);
+            ICopyPost = std::move(ICopyPre);
         }
+
+        D.import(DCopy);
+        I.import(ICopyPost);
+
         if (!squared)
             element_wiseSquareRoot(D);
     }
@@ -149,17 +176,22 @@ public:
      *    @note Arrays f and D can also be the same.
      */
     template < typename Scalar = float >
-    inline static void distanceTransformL2(const MMArray<Scalar, 1> &f, MMArray<Scalar, 1> &D, MMArray<std::size_t, 1> &I, const bool squared = false)
+    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I, const bool squared = false)
     {
-        std::size_t size[1];
-        f.size(size);
-        if (&D != &f)
-            D.resize(size);
-        I.resize(size);
+        std::size_t fSize[1], DSize[1], ISize[1];
+        f.size(fSize);
+        D.size(DSize);
+        I.size(ISize);
+        if (DSize[0] != fSize[0] || ISize[0] != fSize[0])
+            throw std::out_of_range("Matrixes do not have same size.");
+
+        // initialize I
+        initializeIndices(I);
+
         distanceL2(f, D, I);
-        if (!squared) {
+
+        if (!squared)
             element_wiseSquareRoot(D);
-        }
     }
 
     /**
