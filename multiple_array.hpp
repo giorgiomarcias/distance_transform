@@ -242,9 +242,12 @@ public:
         }
         p._array = _array;
         p._accumulatedOffset = _accumulatedOffset;
+        std::size_t newSize[D], newOffset[D];
+        std::memcpy(newSize, _size, D * sizeof(std::size_t));
+        std::memcpy(newOffset, _offset, D * sizeof(std::size_t));
         for (std::size_t d = 0; d < D; ++d) {
-            p._size[d] = _size[order[d]];
-            p._offset[d] = _offset[order[d]];
+            p._size[d] = newSize[order[d]];
+            p._offset[d] = newOffset[order[d]];
         }
     }
 
@@ -281,10 +284,11 @@ public:
                 throw std::out_of_range(stream.str());
             }
         }
-        p._accumulatedOffset = _accumulatedOffset;
+        std::size_t newAccumulatedOffset = _accumulatedOffset;
         for (std::size_t d = 0; d < D; ++d)
-            p._accumulatedOffset += _offset[d] * start[d];
-        p._array = _array + (p._accumulatedOffset - _accumulatedOffset);
+            newAccumulatedOffset += _offset[d] * start[d];
+        p._array = _array + (newAccumulatedOffset - _accumulatedOffset);
+        p._accumulatedOffset = newAccumulatedOffset;
         for (std::size_t d = 0; d < D; ++d) {
             p._size[d] = size[d];
             p._offset[d] = _offset[d];
@@ -575,8 +579,9 @@ public:
             stream << "Window size " << size[0] << " is out of range [" << 0 << ", " << _size[0] - start[0] << ']';
             throw std::out_of_range(stream.str());
         }
-        p._accumulatedOffset = _accumulatedOffset + _offset[0] * start[0];
-        p._array = _array + (p._accumulatedOffset - _accumulatedOffset);
+        std::size_t newAccumulatedOffset = _accumulatedOffset + _offset[0] * start[0];
+        p._array = _array + (newAccumulatedOffset - _accumulatedOffset);
+        p._accumulatedOffset = newAccumulatedOffset;
         p._size[0] = size[0];
         p._offset[0] = _offset[0];
     }
