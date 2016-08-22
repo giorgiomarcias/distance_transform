@@ -222,7 +222,7 @@ public:
      *    @param p                  The output permuted matrix.
      *    @note Example: transpose a 2D matrix by swapping the access indices - MArray<T,2> m, mt; std::size_t trans_ord[2] = {1, 0}; m.permute(trans_ord, mt);
      */
-    inline void permute(const std::size_t order[D], MArray<T, D> &p)
+    inline void permute(const std::size_t order[D], MArray<T, D> &p) const
     {
         bool included[D];
         for (std::size_t d = 0; d < D; ++d)
@@ -257,7 +257,7 @@ public:
      *    @return The output permuted matrix.
      *    @note Example: transpose a 2D matrix by swapping the access indices - MArray<T,2> m, mt; std::size_t trans_ord[2] = {1, 0}; mt = m.permute(trans_ord);
      */
-    inline MArray<T, D> permute(const std::size_t order[D])
+    inline MArray<T, D> permute(const std::size_t order[D]) const
     {
         MArray<T, D> p;
         permute(order, p);
@@ -270,7 +270,7 @@ public:
      *    @param size               The sizes of the window.
      *    @param w                  The output sub-matrix.
      */
-    inline void window(const std::size_t start[D], const std::size_t size[D], MArray<T, D> &w)
+    inline void window(const std::size_t start[D], const std::size_t size[D], MArray<T, D> &w) const
     {
         for (std::size_t d = 0; d < D; ++d) {
             if (start[d] >= _size[d]) {
@@ -301,7 +301,7 @@ public:
      *    @param size               The sizes of the window.
      *    @return The output sub-matrix.
      */
-    inline MArray<T, D> window(const std::size_t start[D], const std::size_t size[D])
+    inline MArray<T, D> window(const std::size_t start[D], const std::size_t size[D]) const
     {
         MArray<T, D> w;
         window(start, size, w);
@@ -581,7 +581,7 @@ public:
      *    @param p                  The output permuted matrix.
      *    @note In practice, this does nothing. It is kept for coherency with higher dimensional MArray.
      */
-    inline void permute(const std::size_t order[1], MArray<T, 1> &p)
+    inline void permute(const std::size_t order[1], MArray<T, 1> &p) const
     {
         for (std::size_t d = 0; d < 1; ++d) {
             if (order[d] >= 1) {
@@ -606,7 +606,7 @@ public:
      *    @return The output permuted matrix.
      *    @note In practice, this does nothing. It is kept for coherency with higher dimensional MArray.
      */
-    inline MArray<T, 1> permute(const std::size_t order[1])
+    inline MArray<T, 1> permute(const std::size_t order[1]) const
     {
         MArray<T, 1> p;
         permute(order, p);
@@ -619,7 +619,7 @@ public:
      *    @param size               The size of the window.
      *    @param w                  The output sub-vector.
      */
-    inline void window(const std::size_t start[1], const std::size_t size[1], MArray<T, 1> &w)
+    inline void window(const std::size_t start[1], const std::size_t size[1], MArray<T, 1> &w) const
     {
         if (start[0] >= _size[0]) {
             std::stringstream stream;
@@ -644,7 +644,7 @@ public:
      *    @param size               The size of the window.
      *    @return The output sub-vector.
      */
-    inline MArray<T, 1> window(const std::size_t start[1], const std::size_t size[1])
+    inline MArray<T, 1> window(const std::size_t start[1], const std::size_t size[1]) const
     {
         MArray<T, 1> w;
         window(start, size, w);
@@ -657,7 +657,7 @@ public:
      *    @param size               The size of the window.
      *    @param w                  The output sub-vector.
      */
-    inline void window(const std::size_t start, const std::size_t size, MArray<T, 1> &w)
+    inline void window(const std::size_t start, const std::size_t size, MArray<T, 1> &w) const
     {
         if (start >= _size[0]) {
             std::stringstream stream;
@@ -681,7 +681,7 @@ public:
      *    @param size               The size of the window.
      *    @return The output sub-vector.
      */
-    inline MArray<T, 1> window(const std::size_t start, const std::size_t size)
+    inline MArray<T, 1> window(const std::size_t start, const std::size_t size) const
     {
         MArray<T, 1> w;
         window(start, size, w);
