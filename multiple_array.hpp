@@ -703,11 +703,17 @@ public:
     }
 
     /**
-     *    @brief Gives the size of this vector.
-     *    @return The output size of this vector.
+     *    @brief Gives the size of this vector
+     *    @param d                  The dimension whose size is requested (MUST be 0).
+     *    @return The size of this matrix at dimension d.
      */
-    inline std::size_t size() const
+    inline std::size_t size(const std::size_t d = 0) const
     {
+        if (d >= 1) {
+            std::stringstream stream;
+            stream << "Index " << d << " is out of range [0, " << 0 << ']';
+            throw std::out_of_range(stream.str());
+        }
         return _size[0];
     }
 

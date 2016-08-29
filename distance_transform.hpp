@@ -14,6 +14,8 @@
 #define distance_transform_h
 
 #include <cmath>
+#include <thread>
+#include <vector>
 #include "multiple_array.hpp"
 
 namespace dt {
@@ -28,10 +30,11 @@ public:
      *    @param f              A DIM-dimensional, regularly sampled function.
      *    @param D              The resulting distance field of f.
      *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @param nThreads       The number of threads for parallel computation. If <= 1, the computation will be sequential.
      *    @note Arrays f and D can also be the same.
      */
-    template < typename Scalar = float, std::size_t DIM = 2 >
-    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const bool squared = false)
+    template < typename Scalar, std::size_t DIM >
+    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const bool squared = false, const std::size_t nThreads = std::thread::hardware_concurrency())
     {
         std::size_t fSize[DIM], DSize[DIM];
         f.size(fSize);
@@ -46,24 +49,51 @@ public:
 
         MArray<Scalar, DIM> tmpF(fCopy);
         MArray<Scalar, DIM> tmpD(DCopy);
-        MArray<Scalar, DIM-1> f_dq;
-        MArray<Scalar, DIM-1> D_dq;
 
         std::size_t order[DIM-1];
 
-        // compute for each slice
-        for (std::size_t d = 0; d < DIM; ++d) {
-            for (std::size_t o = 0; o < DIM-1; ++o)
-                order[o] = (d + o) % (DIM-1);
-            for (std::size_t q = 0; q < tmpF.size(d); ++q) {
-                tmpF.slice(d, q, f_dq);
-                f_dq.permute(order, f_dq);
-                tmpD.slice(d, q, D_dq);
-                D_dq.permute(order, D_dq);
-                distanceL2(f_dq, D_dq);
+        if (nThreads > 1) {
+            std::size_t winStart[DIM], winSize[DIM];
+            for (std::size_t d = 0; d < DIM; ++d) {
+                winStart[d] = 0;
+                winSize[d] = fSize[d];
             }
-            std::swap(tmpD, tmpF);
+            std::size_t span = 0;
+            std::vector<MArray<Scalar, DIM>> tmpWindowsF(nThreads);
+            std::vector<MArray<Scalar, DIM>> tmpWindowsD(nThreads);
+            std::vector<std::thread> threads(nThreads);
+
+            // compute for each slice
+            for (std::size_t d = 0; d < DIM; ++d) {
+                for (std::size_t o = 0; o < DIM-1; ++o)
+                    order[o] = (d + o) % (DIM-1);
+
+                span = static_cast<std::size_t>(std::round(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
+
+                for (std::size_t i = 0; i < nThreads; ++i) {
+                    winStart[d] = i * span;
+                    winSize[d] = std::min(span, tmpF.size(d) - winStart[d]);
+                    tmpWindowsF.at(i) = tmpF.window(winStart, winSize);
+                    tmpWindowsD.at(i) = tmpD.window(winStart, winSize);
+                    winStart[d] = 0;
+                    winSize[d] = fSize[d];
+                    threads.at(i) = std::thread(static_cast<void(*)(const MArray<Scalar, DIM> &, MArray<Scalar, DIM> &, std::size_t, const std::size_t[])>(&distanceL2Helper), std::cref(tmpWindowsF.at(i)), std::ref(tmpWindowsD.at(i)), d, order);
+                }
+                for (std::size_t i = 0; i < nThreads; ++i)
+                    threads.at(i).join();
+
+                std::swap(tmpD, tmpF);
+            }
+        } else {
+            // compute for each slice
+            for (std::size_t d = 0; d < DIM; ++d) {
+                for (std::size_t o = 0; o < DIM-1; ++o)
+                    order[o] = (d + o) % (DIM-1);
+                distanceL2Helper(tmpF, tmpD, d, order);
+                std::swap(tmpD, tmpF);
+            }
         }
+
         if (DIM % 2 == 0)
             DCopy = std::move(fCopy);
 
@@ -78,11 +108,13 @@ public:
      *    @param f              A 1-dimensional, regularly sampled function.
      *    @param D              The resulting distance field of f.
      *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @param nThreads       The number of threads for parallel computation. Actually NOT used, since it's not easy to run a single row computation in parallel.
      *    @note Arrays f and D can also be the same.
      */
-    template < typename Scalar = float >
-    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const bool squared = false)
+    template < typename Scalar >
+    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const bool squared = false, const std::size_t nThreads = std::thread::hardware_concurrency())
     {
+        (void)nThreads; // unused
         std::size_t fSize[1], DSize[1];
         f.size(fSize);
         D.size(DSize);
@@ -102,10 +134,11 @@ public:
      *    @param D              The resulting distance field of f.
      *    @param I              Resulting array containing the (index of the) local minimum for each sample.
      *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @param nThreads       The number of threads for parallel computation. If <= 1, the computation will be sequential.
      *    @note Arrays f and D can also be the same.
      */
-    template < typename Scalar = float, std::size_t DIM = 2 >
-    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false)
+    template < typename Scalar, std::size_t DIM >
+    inline static void distanceTransformL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, MArray<std::size_t, DIM> &I, const bool squared = false, const std::size_t nThreads = std::thread::hardware_concurrency())
     {
         std::size_t fSize[DIM], DSize[DIM], ISize[DIM];
         f.size(fSize);
@@ -128,30 +161,55 @@ public:
         MArray<Scalar, DIM> tmpD(D);
         MArray<std::size_t, DIM> Ipre(ICopyPre);
         MArray<std::size_t, DIM> Ipost(ICopyPost);
-        MArray<Scalar, DIM-1> f_dq;
-        MArray<Scalar, DIM-1> D_dq;
-        MArray<std::size_t, DIM-1> Ipre_dq;
-        MArray<std::size_t, DIM-1> Ipost_dq;
 
         std::size_t order[DIM-1];
 
-        // compute for each slice
-        for (std::size_t d = 0; d < DIM; ++d) {
-            for (std::size_t o = 0; o < DIM-1; ++o)
-                order[o] = (d + o) % (DIM-1);
-            for (std::size_t q = 0; q < tmpF.size(d); ++q) {
-                tmpF.slice(d, q, f_dq);
-                f_dq.permute(order, f_dq);
-                tmpD.slice(d, q, D_dq);
-                D_dq.permute(order, D_dq);
-                Ipre.slice(d, q, Ipre_dq);
-                Ipre_dq.permute(order, Ipre_dq);
-                Ipost.slice(d, q, Ipost_dq);
-                Ipost_dq.permute(order, Ipost_dq);
-                distanceL2(f_dq, D_dq, Ipre_dq, Ipost_dq);
+        if (nThreads > 1) {
+            std::size_t winStart[DIM], winSize[DIM];
+            for (std::size_t d = 0; d < DIM; ++d) {
+                winStart[d] = 0;
+                winSize[d] = fSize[d];
             }
-            std::swap(tmpD, tmpF);
-            std::swap(Ipost, Ipre);
+            std::size_t span = 0;
+            std::vector<MArray<Scalar, DIM>> tmpWindowsF(nThreads);
+            std::vector<MArray<Scalar, DIM>> tmpWindowsD(nThreads);
+            std::vector<MArray<std::size_t, DIM>> tmpWindowsIPre(nThreads);
+            std::vector<MArray<std::size_t, DIM>> tmpWindowsIPost(nThreads);
+            std::vector<std::thread> threads(nThreads);
+
+            // compute for each slice
+            for (std::size_t d = 0; d < DIM; ++d) {
+                for (std::size_t o = 0; o < DIM-1; ++o)
+                    order[o] = (d + o) % (DIM-1);
+
+                span = static_cast<std::size_t>(std::round(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
+
+                for (std::size_t i = 0; i < nThreads; ++i) {
+                    winStart[d] = i * span;
+                    winSize[d] = std::min(span, tmpF.size(d) - winStart[d]);
+                    tmpWindowsF.at(i) = tmpF.window(winStart, winSize);
+                    tmpWindowsD.at(i) = tmpD.window(winStart, winSize);
+                    tmpWindowsIPre.at(i) = Ipre.window(winStart, winSize);
+                    tmpWindowsIPost.at(i) = Ipost.window(winStart, winSize);
+                    winStart[d] = 0;
+                    winSize[d] = fSize[d];
+                    threads.at(i) = std::thread(static_cast<void(*)(const MArray<Scalar, DIM> &, MArray<Scalar, DIM> &, const MArray<std::size_t, DIM> &, MArray<std::size_t, DIM> &, std::size_t, const std::size_t[])>(&distanceL2Helper), std::cref(tmpWindowsF.at(i)), std::ref(tmpWindowsD.at(i)), std::cref(tmpWindowsIPre.at(i)), std::ref(tmpWindowsIPost.at(i)), d, order);
+                }
+                for (std::size_t i = 0; i < nThreads; ++i)
+                    threads.at(i).join();
+
+                std::swap(tmpD, tmpF);
+                std::swap(Ipost, Ipre);
+            }
+        } else {
+            // compute for each slice
+            for (std::size_t d = 0; d < DIM; ++d) {
+                for (std::size_t o = 0; o < DIM-1; ++o)
+                    order[o] = (d + o) % (DIM-1);
+                distanceL2Helper(tmpF, tmpD, Ipre, Ipost, d, order);
+                std::swap(tmpD, tmpF);
+                std::swap(Ipost, Ipre);
+            }
         }
 
         if (DIM % 2 == 0) {
@@ -173,11 +231,13 @@ public:
      *    @param D              The resulting distance field of f.
      *    @param I              Resulting array containing the (index of the) local minimum for each sample.
      *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
+     *    @param nThreads       The number of threads for parallel computation. Actually NOT used, since it's not easy to run a single row computation in parallel.
      *    @note Arrays f and D can also be the same.
      */
-    template < typename Scalar = float >
-    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I, const bool squared = false)
+    template < typename Scalar >
+    inline static void distanceTransformL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, MArray<std::size_t, 1> &I, const bool squared = false, const std::size_t nThreads = std::thread::hardware_concurrency())
     {
+        (void)nThreads; // unused
         std::size_t fSize[1], DSize[1], ISize[1];
         f.size(fSize);
         D.size(DSize);
@@ -222,11 +282,33 @@ public:
 
 private:
     /**
+     *    @brief The loop iteration process that can be executed sequentially and concurrently as well.
+     *    @param f             A DIM-dimensional, regularly sampled function (a window, in multi-threading).
+     *    @param D             The resulting distance field of f (a window, in multi-threading).
+     *    @param d             The dimension where to slice.
+     *    @param order         The order in which to permute the slices.
+     */
+    template < typename Scalar, std::size_t DIM >
+    inline static void distanceL2Helper(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const std::size_t d, const std::size_t order[DIM-1])
+    {
+        MArray<Scalar, DIM-1> f_dq;
+        MArray<Scalar, DIM-1> D_dq;
+
+        for (std::size_t q = 0; q < f.size(d); ++q) {
+            f.slice(d, q, f_dq);
+            f_dq.permute(order, f_dq);
+            D.slice(d, q, D_dq);
+            D_dq.permute(order, D_dq);
+            distanceL2(f_dq, D_dq);
+        }
+    }
+
+    /**
      *    @brief The actual distance field computation is done by recursive calls of this method, in lower dimenional sub-functions.
      *    @param f              A DIM-dimensional, regularly sampled function.
      *    @param D              The resulting distance field of f.
      */
-    template < typename Scalar = float, std::size_t DIM >
+    template < typename Scalar, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
     {
         MArray<Scalar, DIM-1> f_q, D_q;
@@ -243,7 +325,7 @@ private:
      *    @param f              A 1-dimensional, regularly sampled function.
      *    @param D              The resulting distance field of f.
      */
-    template < typename Scalar = float >
+    template < typename Scalar >
     inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D)
     {
         if (f.size() == 0 || f.size() > D.size())
@@ -286,12 +368,42 @@ private:
     }
 
     /**
+     *    @brief The loop iteration process that can be executed sequentially and concurrently as well.
+     *    @param f             A DIM-dimensional, regularly sampled function (a window, in multi-threading).
+     *    @param D             The resulting distance field of f (a window, in multi-threading).
+     *    @param Ipre          Array containing the initial inedx of local minimum for each sample.
+     *    @param Ipost         Array containing the resulting index of local minimum for each sample.
+     *    @param d             The dimension where to slice.
+     *    @param order         The order in which to permute the slices.
+     */
+    template < typename Scalar, std::size_t DIM >
+    inline static void distanceL2Helper(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const MArray<std::size_t, DIM> &Ipre, MArray<std::size_t, DIM> &Ipost, const std::size_t d, const std::size_t order[DIM-1])
+    {
+        MArray<Scalar, DIM-1> f_dq;
+        MArray<Scalar, DIM-1> D_dq;
+        MArray<std::size_t, DIM-1> Ipre_dq;
+        MArray<std::size_t, DIM-1> Ipost_dq;
+
+        for (std::size_t q = 0; q < f.size(d); ++q) {
+            f.slice(d, q, f_dq);
+            f_dq.permute(order, f_dq);
+            D.slice(d, q, D_dq);
+            D_dq.permute(order, D_dq);
+            Ipre.slice(d, q, Ipre_dq);
+            Ipre_dq.permute(order, Ipre_dq);
+            Ipost.slice(d, q, Ipost_dq);
+            Ipost_dq.permute(order, Ipost_dq);
+            distanceL2(f_dq, D_dq, Ipre_dq, Ipost_dq);
+        }
+    }
+
+    /**
      *    @brief The actual distance field computation is done by recursive calls of this method, in lower dimenional sub-functions.
      *    @param f              A DIM-dimensional, regularly sampled function.
      *    @param D              The resulting distance field of f.
-     *    @param I              Resulting array containing the (index of the) local minimum for each sample.
+     *    @param I              Resulting array containing the index of the local minimum for each sample.
      */
-    template < typename Scalar = float, std::size_t DIM >
+    template < typename Scalar, std::size_t DIM >
     inline static void distanceL2(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const MArray<std::size_t, DIM> &Ipre, MArray<std::size_t, DIM> &Ipost)
     {
         MArray<Scalar, DIM-1> f_q, D_q;
@@ -312,7 +424,7 @@ private:
      *    @param D              The resulting distance field of f.
      *    @param I              Resulting array containing the (index of the) local minimum for each sample.
      */
-    template < typename Scalar = float >
+    template < typename Scalar >
     inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const MArray<std::size_t, 1> &Ipre, MArray<std::size_t, 1> &Ipost)
     {
         if (f.size() == 0 || f.size() > D.size())
@@ -361,7 +473,7 @@ public:
      *    @brief Compute the square root of each individual element of a DIM-dimensional array.
      *    @param m              A DIM-dimensioanl array whose element have to be square rooted.
      */
-    template < typename Scalar = float, std::size_t DIM >
+    template < typename Scalar, std::size_t DIM >
     inline static void element_wiseSquareRoot(MArray<Scalar, DIM> &m)
     {
         MArray<Scalar, DIM-1> mm;
@@ -375,7 +487,7 @@ public:
      *    @brief Compute the square root of each individual element of a 1-dimensional array.
      *    @param m              A 1-dimensioanl array whose element have to be square rooted.
      */
-    template < typename Scalar = float >
+    template < typename Scalar >
     inline static void element_wiseSquareRoot(MArray<Scalar, 1> &m)
     {
         for (std::size_t q = 0; q < m.size(); ++q)
