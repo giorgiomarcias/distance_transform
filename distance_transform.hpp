@@ -68,7 +68,7 @@ public:
                 for (std::size_t o = 0; o < DIM-1; ++o)
                     order[o] = (d + o) % (DIM-1);
 
-                span = static_cast<std::size_t>(std::round(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
+                span = static_cast<std::size_t>(std::floor(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
 
                 for (std::size_t i = 0; i < nThreads; ++i) {
                     winStart[d] = i * span;
@@ -182,7 +182,7 @@ public:
                 for (std::size_t o = 0; o < DIM-1; ++o)
                     order[o] = (d + o) % (DIM-1);
 
-                span = static_cast<std::size_t>(std::round(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
+                span = static_cast<std::size_t>(std::floor(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
 
                 for (std::size_t i = 0; i < nThreads; ++i) {
                     winStart[d] = i * span;
