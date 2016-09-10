@@ -50,48 +50,47 @@ public:
         MArray<Scalar, DIM> tmpF(fCopy);
         MArray<Scalar, DIM> tmpD(DCopy);
 
-        std::size_t order[DIM-1];
+        std::size_t order[DIM];
 
-        if (nThreads > 1) {
-            std::size_t winStart[DIM], winSize[DIM];
-            for (std::size_t d = 0; d < DIM; ++d) {
-                winStart[d] = 0;
-                winSize[d] = fSize[d];
+        for (std::size_t d = 0; d < DIM; ++d) {
+            // permute rotate
+            for (std::size_t o = 0; o < DIM; ++o)
+                order[o] = (d + o) % DIM;
+            MArray<Scalar, DIM> tmpF_rotated = tmpF.permute(order);
+            MArray<Scalar, DIM> tmpD_rotated = tmpD.permute(order);
+
+
+            std::size_t winStart[DIM] = {0}, winSize[DIM];
+            tmpF_rotated.size(winSize);
+
+            std::size_t range = winSize[0];
+            if (nThreads < range) {
+                range += range % nThreads;
+                range /= nThreads;
             }
-            std::size_t span = 0;
-            std::vector<MArray<Scalar, DIM>> tmpWindowsF(nThreads);
-            std::vector<MArray<Scalar, DIM>> tmpWindowsD(nThreads);
-            std::vector<std::thread> threads(nThreads);
+            std::size_t nWindows = winSize[0] / range + (winSize[0] % range != 0 ? 1 : 0);
 
-            // compute for each slice
-            for (std::size_t d = 0; d < DIM; ++d) {
-                for (std::size_t o = 0; o < DIM-1; ++o)
-                    order[o] = (d + o) % (DIM-1);
+            if (nWindows > 1) {
+                std::vector<MArray<Scalar, DIM>> tmpWindowsF(nWindows);
+                std::vector<MArray<Scalar, DIM>> tmpWindowsD(nWindows);
+                std::vector<std::thread> threads(nWindows);
 
-                span = static_cast<std::size_t>(std::floor(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
-
-                for (std::size_t i = 0; i < nThreads; ++i) {
-                    winStart[d] = i * span;
-                    winSize[d] = std::min(span, tmpF.size(d) - winStart[d]);
-                    tmpWindowsF.at(i) = tmpF.window(winStart, winSize);
-                    tmpWindowsD.at(i) = tmpD.window(winStart, winSize);
-                    winStart[d] = 0;
-                    winSize[d] = fSize[d];
-                    threads.at(i) = std::thread(static_cast<void(*)(const MArray<Scalar, DIM> &, MArray<Scalar, DIM> &, std::size_t, const std::size_t[])>(&distanceL2Helper), std::cref(tmpWindowsF.at(i)), std::ref(tmpWindowsD.at(i)), d, order);
+                for (std::size_t i = 0; i < nWindows; ++i) {
+                    winStart[0] = i * range;
+                    winSize[0] = std::min(range, tmpF_rotated.sizeAt(0) - winStart[0]);
+                    tmpWindowsF.at(i) = tmpF_rotated.window(winStart, winSize);
+                    tmpWindowsD.at(i) = tmpD_rotated.window(winStart, winSize);
+                    winStart[0] = 0;
+                    winSize[0] = tmpF_rotated.sizeAt(0);
+                    threads.at(i) = std::thread(static_cast<void(*)(const MArray<Scalar, DIM> &, MArray<Scalar, DIM> &)>(&distanceL2Helper), std::cref(tmpWindowsF.at(i)), std::ref(tmpWindowsD.at(i)));
                 }
-                for (std::size_t i = 0; i < nThreads; ++i)
+                for (std::size_t i = 0; i < nWindows; ++i)
                     threads.at(i).join();
+            } else {
+                distanceL2Helper(tmpF_rotated, tmpD_rotated);
+            }
 
-                std::swap(tmpD, tmpF);
-            }
-        } else {
-            // compute for each slice
-            for (std::size_t d = 0; d < DIM; ++d) {
-                for (std::size_t o = 0; o < DIM-1; ++o)
-                    order[o] = (d + o) % (DIM-1);
-                distanceL2Helper(tmpF, tmpD, d, order);
-                std::swap(tmpD, tmpF);
-            }
+            std::swap(tmpD, tmpF);
         }
 
         if (DIM % 2 == 0)
@@ -162,54 +161,53 @@ public:
         MArray<std::size_t, DIM> Ipre(ICopyPre);
         MArray<std::size_t, DIM> Ipost(ICopyPost);
 
-        std::size_t order[DIM-1];
+        std::size_t order[DIM];
 
-        if (nThreads > 1) {
-            std::size_t winStart[DIM], winSize[DIM];
-            for (std::size_t d = 0; d < DIM; ++d) {
-                winStart[d] = 0;
-                winSize[d] = fSize[d];
+        for (std::size_t d = 0; d < DIM; ++d) {
+            // permute rotate
+            for (std::size_t o = 0; o < DIM; ++o)
+                order[o] = (d + o) % DIM;
+            MArray<Scalar, DIM> tmpF_rotated = tmpF.permute(order);
+            MArray<Scalar, DIM> tmpD_rotated = tmpD.permute(order);
+            MArray<std::size_t, DIM> Ipre_rotated = Ipre.permute(order);
+            MArray<std::size_t, DIM> Ipost_rotated = Ipost.permute(order);
+
+            std::size_t winStart[DIM] = {0}, winSize[DIM];
+            tmpF_rotated.size(winSize);
+
+            std::size_t range = winSize[0];
+            if (nThreads < range) {
+                range += range % nThreads;
+                range /= nThreads;
             }
-            std::size_t span = 0;
-            std::vector<MArray<Scalar, DIM>> tmpWindowsF(nThreads);
-            std::vector<MArray<Scalar, DIM>> tmpWindowsD(nThreads);
-            std::vector<MArray<std::size_t, DIM>> tmpWindowsIPre(nThreads);
-            std::vector<MArray<std::size_t, DIM>> tmpWindowsIPost(nThreads);
-            std::vector<std::thread> threads(nThreads);
+            std::size_t nWindows = winSize[0] / range + (winSize[0] % range != 0 ? 1 : 0);
 
-            // compute for each slice
-            for (std::size_t d = 0; d < DIM; ++d) {
-                for (std::size_t o = 0; o < DIM-1; ++o)
-                    order[o] = (d + o) % (DIM-1);
+            if (nWindows > 1) {
+                std::vector<MArray<Scalar, DIM>> tmpWindowsF(nWindows);
+                std::vector<MArray<Scalar, DIM>> tmpWindowsD(nWindows);
+                std::vector<MArray<std::size_t, DIM>> tmpWindowsIPre(nWindows);
+                std::vector<MArray<std::size_t, DIM>> tmpWindowsIPost(nWindows);
+                std::vector<std::thread> threads(nWindows);
 
-                span = static_cast<std::size_t>(std::floor(static_cast<double>(tmpF.size(d)) / static_cast<double>(nThreads)));
-
-                for (std::size_t i = 0; i < nThreads; ++i) {
-                    winStart[d] = i * span;
-                    winSize[d] = std::min(span, tmpF.size(d) - winStart[d]);
-                    tmpWindowsF.at(i) = tmpF.window(winStart, winSize);
-                    tmpWindowsD.at(i) = tmpD.window(winStart, winSize);
-                    tmpWindowsIPre.at(i) = Ipre.window(winStart, winSize);
-                    tmpWindowsIPost.at(i) = Ipost.window(winStart, winSize);
-                    winStart[d] = 0;
-                    winSize[d] = fSize[d];
-                    threads.at(i) = std::thread(static_cast<void(*)(const MArray<Scalar, DIM> &, MArray<Scalar, DIM> &, const MArray<std::size_t, DIM> &, MArray<std::size_t, DIM> &, std::size_t, const std::size_t[])>(&distanceL2Helper), std::cref(tmpWindowsF.at(i)), std::ref(tmpWindowsD.at(i)), std::cref(tmpWindowsIPre.at(i)), std::ref(tmpWindowsIPost.at(i)), d, order);
+                for (std::size_t i = 0; i < nWindows; ++i) {
+                    winStart[0] = i * range;
+                    winSize[0] = std::min(range, tmpF_rotated.sizeAt(0) - winStart[0]);
+                    tmpWindowsF.at(i) = tmpF_rotated.window(winStart, winSize);
+                    tmpWindowsD.at(i) = tmpD_rotated.window(winStart, winSize);
+                    tmpWindowsIPre.at(i) = Ipre_rotated.window(winStart, winSize);
+                    tmpWindowsIPost.at(i) = Ipost_rotated.window(winStart, winSize);
+                    winStart[0] = 0;
+                    winSize[0] = tmpF_rotated.sizeAt(0);
+                    threads.at(i) = std::thread(static_cast<void(*)(const MArray<Scalar, DIM> &, MArray<Scalar, DIM> &, const MArray<std::size_t, DIM> &, MArray<std::size_t, DIM> &)>(&distanceL2Helper), std::cref(tmpWindowsF.at(i)), std::ref(tmpWindowsD.at(i)), std::cref(tmpWindowsIPre.at(i)), std::ref(tmpWindowsIPost.at(i)));
                 }
-                for (std::size_t i = 0; i < nThreads; ++i)
+                for (std::size_t i = 0; i < nWindows; ++i)
                     threads.at(i).join();
+            } else {
+                distanceL2Helper(tmpF_rotated, tmpD_rotated, Ipre_rotated, Ipost_rotated);
+            }
 
-                std::swap(tmpD, tmpF);
-                std::swap(Ipost, Ipre);
-            }
-        } else {
-            // compute for each slice
-            for (std::size_t d = 0; d < DIM; ++d) {
-                for (std::size_t o = 0; o < DIM-1; ++o)
-                    order[o] = (d + o) % (DIM-1);
-                distanceL2Helper(tmpF, tmpD, Ipre, Ipost, d, order);
-                std::swap(tmpD, tmpF);
-                std::swap(Ipost, Ipre);
-            }
+            std::swap(tmpD, tmpF);
+            std::swap(Ipost, Ipre);
         }
 
         if (DIM % 2 == 0) {
@@ -262,7 +260,7 @@ public:
     inline static void initializeIndices(MArray<std::size_t, DIM> &I)
     {
         MArray<std::size_t, DIM-1> I_q;
-        for (std::size_t q = 0; q < I.size(); ++q) {
+        for (std::size_t q = 0; q < I.sizeAt(0); ++q) {
             I.at(q, I_q);
             initializeIndices(I_q);
         }
@@ -274,7 +272,7 @@ public:
      */
     inline static void initializeIndices(MArray<std::size_t, 1> &I)
     {
-        for (std::size_t q = 0; q < I.size(); ++q)
+        for (std::size_t q = 0; q < I.sizeAt(0); ++q)
             I[q] = I.accumulatedOffset(q);
     }
 
@@ -289,16 +287,14 @@ private:
      *    @param order         The order in which to permute the slices.
      */
     template < typename Scalar, std::size_t DIM >
-    inline static void distanceL2Helper(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const std::size_t d, const std::size_t order[DIM-1])
+    inline static void distanceL2Helper(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D)
     {
         MArray<Scalar, DIM-1> f_dq;
         MArray<Scalar, DIM-1> D_dq;
 
-        for (std::size_t q = 0; q < f.size(d); ++q) {
-            f.slice(d, q, f_dq);
-            f_dq.permute(order, f_dq);
-            D.slice(d, q, D_dq);
-            D_dq.permute(order, D_dq);
+        for (std::size_t q = 0; q < f.sizeAt(0); ++q) {
+            f.slice(0, q, f_dq);
+            D.slice(0, q, D_dq);
             distanceL2(f_dq, D_dq);
         }
     }
@@ -313,7 +309,7 @@ private:
     {
         MArray<Scalar, DIM-1> f_q, D_q;
         // compute distance at lower dimensions for each hyperplane
-        for (std::size_t q = 0; q < f.size(); ++q) {
+        for (std::size_t q = 0; q < f.sizeAt(0); ++q) {
             f.at(q, f_q);
             D.at(q, D_q);
             distanceL2(f_q, D_q);
@@ -328,22 +324,22 @@ private:
     template < typename Scalar >
     inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D)
     {
-        if (f.size() == 0 || f.size() > D.size())
+        if (f.sizeAt(0) == 0 || f.sizeAt(0) > D.sizeAt(0))
             return;
-        if (f.size() == 1) {
+        if (f.sizeAt(0) == 1) {
             D[0] = f[0];
             return;
         }
         std::size_t k = 0;                          // index of rightmost parabola in lower envelope
-        std::size_t *v = new std::size_t[f.size()]; // locations of parabolas in lower envelope
-        double *z = new double[f.size() + 1];       // locations of boundaries between parabolas
+        std::size_t *v = new std::size_t[f.sizeAt(0)]; // locations of parabolas in lower envelope
+        double *z = new double[f.sizeAt(0) + 1];       // locations of boundaries between parabolas
         double s = double(0);
         // initialization
         v[0] = 0;
         z[0] = -std::numeric_limits<double>::max();
         z[1] = std::numeric_limits<double>::max();
         // compute lowest envelope:
-        for (std::size_t q = 1; q < f.size(); ++q) {
+        for (std::size_t q = 1; q < f.sizeAt(0); ++q) {
             ++k;    // this compensates for first line of next do-while block
             do {
                 --k;
@@ -357,7 +353,7 @@ private:
         }
         // fill in values of distance transform
         k = 0;
-        for (std::size_t q = 0; q < f.size(); ++q) {
+        for (std::size_t q = 0; q < f.sizeAt(0); ++q) {
             while(z[k+1] < static_cast<double>(q))
                 ++k;
             D[q] = f[v[k]] + (q - static_cast<Scalar>(v[k]))*(q - static_cast<Scalar>(v[k]));
@@ -373,26 +369,20 @@ private:
      *    @param D             The resulting distance field of f (a window, in multi-threading).
      *    @param Ipre          Array containing the initial inedx of local minimum for each sample.
      *    @param Ipost         Array containing the resulting index of local minimum for each sample.
-     *    @param d             The dimension where to slice.
-     *    @param order         The order in which to permute the slices.
      */
     template < typename Scalar, std::size_t DIM >
-    inline static void distanceL2Helper(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const MArray<std::size_t, DIM> &Ipre, MArray<std::size_t, DIM> &Ipost, const std::size_t d, const std::size_t order[DIM-1])
+    inline static void distanceL2Helper(const MArray<Scalar, DIM> &f, MArray<Scalar, DIM> &D, const MArray<std::size_t, DIM> &Ipre, MArray<std::size_t, DIM> &Ipost)
     {
         MArray<Scalar, DIM-1> f_dq;
         MArray<Scalar, DIM-1> D_dq;
         MArray<std::size_t, DIM-1> Ipre_dq;
         MArray<std::size_t, DIM-1> Ipost_dq;
 
-        for (std::size_t q = 0; q < f.size(d); ++q) {
-            f.slice(d, q, f_dq);
-            f_dq.permute(order, f_dq);
-            D.slice(d, q, D_dq);
-            D_dq.permute(order, D_dq);
-            Ipre.slice(d, q, Ipre_dq);
-            Ipre_dq.permute(order, Ipre_dq);
-            Ipost.slice(d, q, Ipost_dq);
-            Ipost_dq.permute(order, Ipost_dq);
+        for (std::size_t q = 0; q < f.sizeAt(0); ++q) {
+            f.slice(0, q, f_dq);
+            D.slice(0, q, D_dq);
+            Ipre.slice(0, q, Ipre_dq);
+            Ipost.slice(0, q, Ipost_dq);
             distanceL2(f_dq, D_dq, Ipre_dq, Ipost_dq);
         }
     }
@@ -409,7 +399,7 @@ private:
         MArray<Scalar, DIM-1> f_q, D_q;
         MArray<std::size_t, DIM-1> Ipre_q, Ipost_q;
         // compute distance at lower dimensions for each hyperplane
-        for (std::size_t q = 0; q < f.size(); ++q) {
+        for (std::size_t q = 0; q < f.sizeAt(0); ++q) {
             f.at(q, f_q);
             D.at(q, D_q);
             Ipre.at(q, Ipre_q);
@@ -427,23 +417,23 @@ private:
     template < typename Scalar >
     inline static void distanceL2(const MArray<Scalar, 1> &f, MArray<Scalar, 1> &D, const MArray<std::size_t, 1> &Ipre, MArray<std::size_t, 1> &Ipost)
     {
-        if (f.size() == 0 || f.size() > D.size())
+        if (f.sizeAt(0) == 0 || f.sizeAt(0) > D.sizeAt(0))
             return;
-        if (f.size() == 1) {
+        if (f.sizeAt(0) == 1) {
             D[0] = f[0];
             Ipost[0] = Ipre[0];
             return;
         }
         std::size_t k = 0;                          // index of rightmost parabola in lower envelope
-        std::size_t *v = new std::size_t[f.size()]; // locations of parabolas in lower envelope
-        double *z = new double[f.size() + 1];       // locations of boundaries between parabolas
+        std::size_t *v = new std::size_t[f.sizeAt(0)]; // locations of parabolas in lower envelope
+        double *z = new double[f.sizeAt(0) + 1];       // locations of boundaries between parabolas
         double s = double(0);
         // initialization
         v[0] = 0;
         z[0] = -std::numeric_limits<double>::max();
         z[1] = std::numeric_limits<double>::max();
         // compute lowest envelope:
-        for (std::size_t q = 1; q < f.size(); ++q) {
+        for (std::size_t q = 1; q < f.sizeAt(0); ++q) {
             ++k;    // this compensates for first line of next do-while block
             do {
                 --k;
@@ -457,7 +447,7 @@ private:
         }
         // fill in values of distance transform
         k = 0;
-        for (std::size_t q = 0; q < f.size(); ++q) {
+        for (std::size_t q = 0; q < f.sizeAt(0); ++q) {
             while(z[k+1] < static_cast<double>(q))
                 ++k;
             D[q] = f[v[k]] + (q - static_cast<Scalar>(v[k]))*(q - static_cast<Scalar>(v[k]));
@@ -477,7 +467,7 @@ public:
     inline static void element_wiseSquareRoot(MArray<Scalar, DIM> &m)
     {
         MArray<Scalar, DIM-1> mm;
-        for (std::size_t q = 0; q < m.size(); ++q) {
+        for (std::size_t q = 0; q < m.sizeAt(0); ++q) {
             m.at(q, mm);
             element_wiseSquareRoot(mm);
         }
@@ -490,7 +480,7 @@ public:
     template < typename Scalar >
     inline static void element_wiseSquareRoot(MArray<Scalar, 1> &m)
     {
-        for (std::size_t q = 0; q < m.size(); ++q)
+        for (std::size_t q = 0; q < m.sizeAt(0); ++q)
             m[q] = static_cast<Scalar>(std::sqrt(m[q]));
     }
 };

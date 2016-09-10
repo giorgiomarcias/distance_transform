@@ -327,7 +327,7 @@ public:
      *    @param d                  The dimension whose size is requested.
      *    @return The size of this matrix at dimension d.
      */
-    inline std::size_t size(const std::size_t d = 0) const
+    inline std::size_t sizeAt(const std::size_t d) const
     {
         if (d >= D) {
             std::stringstream stream;
@@ -707,7 +707,7 @@ public:
      *    @param d                  The dimension whose size is requested (MUST be 0).
      *    @return The size of this matrix at dimension d.
      */
-    inline std::size_t size(const std::size_t d = 0) const
+    inline std::size_t sizeAt(const std::size_t d) const
     {
         if (d >= 1) {
             std::stringstream stream;
@@ -864,7 +864,7 @@ public:
         try {
             const MMArray<T, D> &oo = dynamic_cast<const MMArray<T, D> &>(o);
             for (std::size_t d = 0; d < D; ++d)
-                if (MArray<T, D>::size(d) != oo.size(d))
+                if (MArray<T, D>::sizeAt(d) != oo.sizeAt(d))
                     throw std::out_of_range("Matrixes do not have same size.");
             std::memcpy(_arrayPtr.get(), oo._arrayPtr.get(), MArray<T, D>::totalSize() * sizeof(T));
         } catch(std::bad_cast &bc) {

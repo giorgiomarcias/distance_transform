@@ -20,12 +20,12 @@ using namespace dt;
 
 int main(int argc, char *argv[])
 {
-    std::vector<std::size_t> size({10, 10});
+    std::vector<std::size_t> size({15, 15});
     MMArray<float, 2> f(size.data());
     MMArray<std::size_t, 2> indices(size.data());
     for (std::size_t i = 0; i < size[0]; ++i)
         for (std::size_t j = 0; j < size[1]; ++j) {
-            if (i == j)
+            if (i == j && i*j < size[0]*size[1] / 2)
                 f[i][j] = 0.0f;
             else
                 f[i][j] = std::numeric_limits<float>::max();
@@ -44,25 +44,25 @@ int main(int argc, char *argv[])
     std::vector<std::size_t> winStart({2, 3});
     std::vector<std::size_t> winSize({5, 6});
     MArray<std::size_t, 2> indicesWin = indices.window(winStart.data(), winSize.data());
-    for (std::size_t i = 0; i < indicesWin.size(); ++i) {
-        for (std::size_t j = 0; j < indicesWin[i].size(); ++j)
+    for (std::size_t i = 0; i < indicesWin.sizeAt(0); ++i) {
+        for (std::size_t j = 0; j < indicesWin[i].sizeAt(0); ++j)
             std::cout << std::setw(7) << indicesWin[i][j] << ' ';
         std::cout << std::endl;
     }
 
     std::cout << std::endl << "Slice 2 at dimension 0:" << std::endl;
     MArray<std::size_t, 1> sl = indices.slice(0, 2);
-    for (std::size_t j = 0; j < sl.size(); ++j)
+    for (std::size_t j = 0; j < sl.sizeAt(0); ++j)
         std::cout << std::setw(7) << sl[j] << ' ';
     std::cout << std::endl << "Slice 2 at dimension 1:" << std::endl;
     indices.slice(1, 2, sl);
-    for (std::size_t j = 0; j < sl.size(); ++j)
+    for (std::size_t j = 0; j < sl.sizeAt(0); ++j)
         std::cout << std::setw(7) << sl[j] << ' ';
     std::cout << std::endl;
 
     std::cout << std::endl << "Window [4:9] of slide 2 at dimension 1:" << std::endl;
     sl = sl.window(4, 6);
-    for (std::size_t j = 0; j < sl.size(); ++j)
+    for (std::size_t j = 0; j < sl.sizeAt(0); ++j)
         std::cout << std::setw(7) << sl[j] << ' ';
     std::cout << std::endl << std::endl;
 
@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
      */
 
     std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
-    DistanceTransform::distanceTransformL2(f, f, indices, true, 1);
+    DistanceTransform::distanceTransformL2(f, f, indices, false, 1);
     std::cout << std::endl << "2D distance function computed in: " << std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count() << " ns." << std::endl;
 
     std::cout << std::endl << "D (squared):" << std::endl;
@@ -107,9 +107,9 @@ int main(int argc, char *argv[])
         for (std::size_t j = 0; j < size[1]; ++j)
             f[i][j] = std::numeric_limits<float>::max();
     MArray<float, 2> fWin = f.window(winStart.data(), winSize.data());
-    for (std::size_t i = 0; i < fWin.size(); ++i)
-        for (std::size_t j = 0; j < fWin[i].size(); ++j)
-            if (i == 0 || i == fWin.size()-1 || j == 0 || j == fWin[i].size()-1)
+    for (std::size_t i = 0; i < fWin.sizeAt(0); ++i)
+        for (std::size_t j = 0; j < fWin[i].sizeAt(0); ++j)
+            if (i == 0 || i == fWin.sizeAt(0)-1 || j == 0 || j == fWin[i].sizeAt(0)-1)
                 fWin[i][j] = 0.0f;
             else
                 fWin[i][j] = std::numeric_limits<float>::max();
