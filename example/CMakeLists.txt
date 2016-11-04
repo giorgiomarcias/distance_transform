@@ -1,21 +1,20 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.3)
 
-project(distance_transform)
+project(distance_transform_example)
 
-# source files
-set(hdr_dir ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
+
+#option(WITH_RTTI "Build DopeVector using RTTI or not" ON)
+option(WITH_EIGEN "Build DopeVector with Index<Dimension> as Eigen Matrix (if present) or not." ON)
+option(ATTACH_SOURCES "When generating an IDE project, add DopeVector header files to project sources." ON)
+
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR}/lib_distance_transform)
+include(${CMAKE_CURRENT_SOURCE_DIR}/../sources_properties.cmake)
+
 set(src
-    ${hdr_dir}/multiple_array.hpp
-    ${hdr_dir}/distance_transform.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 )
-
-# create the executable
 add_executable(${PROJECT_NAME} ${src})
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
-    CXX_STANDARD 11
-    CXX_STANDARD_REQUIRED ON
-)
-
-target_include_directories(${PROJECT_NAME} PUBLIC ${hdr_dir})
+target_link_libraries(${PROJECT_NAME} distance_transform)
+set_distance_transform_source_files_properties()

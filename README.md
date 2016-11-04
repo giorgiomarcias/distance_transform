@@ -25,13 +25,14 @@ This software takes some cues from both their implementation and the one by Sofi
     works only with *2*-D images. Here I provide an implementation that works
     with arrays of any dimension *N*.
 * **Low memory usage:** By using
-    [dope vectors](https://en.wikipedia.org/wiki/Dope_vector), there is not need
+    [dope vectors](https://github.com/giorgiomarcias/DopeVector), there is not need
     of copying array data around during the computation.
 * **Index of nearest element:** Optionally get the index (as the linear
     distance from the beginning of a mono-dimensional array - see the example)
     of the nearest element to the one at any position in the array. Not just its
     distance (taken from the implementation by Sofien Bouaziz and Andrea
     Tagliasacchi).
+* **Parallel execution by giving the number of threads to spread.
 
 ### License ###
 This software is subject to the [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0.html) License.
