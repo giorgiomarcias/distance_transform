@@ -17,6 +17,7 @@
 
 #include <distance_transform/distance_transform.hpp>
 using namespace dt;
+using namespace dope;
 
 int main(int argc, char *argv[])
 {
