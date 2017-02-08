@@ -32,7 +32,9 @@ int main(int argc, char *argv[])
                 f[i][j] = std::numeric_limits<float>::max();
         }
 
-    DistanceTransform::initializeIndices(indices);    // this is not necessary, since distanceTransformL2() already does it
+	// Note: this is necessary at least at the first distance transform execution
+	// and every time a reset is desired; it is not, instead, when updating
+    DistanceTransform::initializeIndices(indices);
 
     std::cout << "indices:" << std::endl;
     for (SizeType i = 0; i < size[0]; ++i) {

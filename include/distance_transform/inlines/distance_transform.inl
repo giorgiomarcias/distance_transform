@@ -112,9 +112,6 @@ namespace dt {
 		if (DSize != fSize || ISize != fSize)
 			throw std::out_of_range("Matrixes do not have same size.");
 
-		// initialize I
-		initializeIndices(I);
-
 		dope::Grid<Scalar, DIM> fCopy(fSize);
 		fCopy.import(f);
 		dope::Grid<Scalar, DIM> DCopy(DSize);
@@ -199,9 +196,6 @@ namespace dt {
 		ISize = I.allSizes();
 		if (DSize != fSize || ISize != fSize)
 			throw std::out_of_range("Matrixes do not have same size.");
-
-		// initialize I
-		initializeIndices(I);
 
 		distanceL2(f, D, I);
 

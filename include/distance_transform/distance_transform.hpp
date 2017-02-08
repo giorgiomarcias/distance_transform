@@ -53,7 +53,7 @@ namespace dt {
 		 *    @param I              Resulting array containing the (index of the) local minimum for each sample.
 		 *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
 		 *    @param nThreads       The number of threads for parallel computation. If <= 1, the computation will be sequential.
-		 *    @note Arrays f and D can also be the same.
+		 *    @note Arrays f and D can also be the same. I should be first initialized.
 		 */
 		template < typename Scalar, dope::SizeType DIM >
 		inline static void distanceTransformL2(const dope::DopeVector<Scalar, DIM> &f, dope::DopeVector<Scalar, DIM> &D, dope::DopeVector<dope::SizeType, DIM> &I, const bool squared = false, const std::size_t nThreads = std::thread::hardware_concurrency());
@@ -66,7 +66,7 @@ namespace dt {
 		 *    @param I              Resulting array containing the (index of the) local minimum for each sample.
 		 *    @param squared        Compute squared distances (L2)^2 - avoiding to compute square roots - (true) or keep them normal (false - default).
 		 *    @param nThreads       The number of threads for parallel computation. Actually NOT used, since it's not easy to run a single row computation in parallel.
-		 *    @note Arrays f and D can also be the same.
+		 *    @note Arrays f and D can also be the same. I sould be first initialized.
 		 */
 		template < typename Scalar >
 		inline static void distanceTransformL2(const dope::DopeVector<Scalar, 1> &f, dope::DopeVector<Scalar, 1> &D, dope::DopeVector<dope::SizeType, 1> &I, const bool squared = false, const std::size_t nThreads = std::thread::hardware_concurrency());
