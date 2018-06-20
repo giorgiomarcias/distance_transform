@@ -16,5 +16,5 @@ set(src
 )
 add_executable(${PROJECT_NAME} ${src})
 
-target_link_libraries(${PROJECT_NAME} distance_transform)
+target_link_libraries(${PROJECT_NAME} distance_transform pthread)
 set_distance_transform_source_files_properties()
