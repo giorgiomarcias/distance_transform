@@ -12,6 +12,13 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/extern/DopeVector ${CMAKE_CURRENT_B
 include(${CMAKE_CURRENT_SOURCE_DIR}/extern/DopeVector/sources_properties.cmake)
 
 
+set(toLink DopeVector)
+if(CMAKE_COMPILER_IS_GNUCXX)
+	find_package(Threads REQUIRED)
+	list(APPEND toLink Threads::Threads)
+endif()
+
+
 
 set(hdr_dir ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -33,7 +40,7 @@ set(all_hdr ${hdr_inline_files} ${hdr_main_files})
 add_library(${PROJECT_NAME} INTERFACE)
 
 target_include_directories(${PROJECT_NAME} INTERFACE ${hdr_dir})
-target_link_libraries(${PROJECT_NAME} INTERFACE DopeVector)
+target_link_libraries(${PROJECT_NAME} INTERFACE ${toLink})
 
 if(ATTACH_SOURCES)
 	target_sources(${PROJECT_NAME} INTERFACE ${all_hdr})
